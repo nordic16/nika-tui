@@ -9,12 +9,13 @@ pub mod constants;
 pub mod models;
 #[cfg(test)]
 mod tests;
+mod event_handler;
 
-fn main() -> io::Result<()> {
-    let mut term = App::init().unwrap();
-    let mut app = App::default();    
-
-    app.run(&mut term).unwrap();
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    let mut app = App::default();   
+    app.init()?; 
+    app.run().await?;
 
     App::restore()
 }
