@@ -1,14 +1,14 @@
 use ratatui::{
     prelude::*,
-    widgets::{block::*, Borders, Paragraph},
+    widgets::{block::*, Borders},
 };
 #[derive(Debug, Default)]
-pub struct SettingsPage;
+pub struct OptionsPage;
 
-impl Widget for SettingsPage {
+impl Widget for OptionsPage {
     fn render(self, area: Rect, buf: &mut Buffer) where Self: Sized {
         Block::default()
-            .title("Settings".bold().light_red())
+            .title("Options".bold().light_red())
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_style(Style::new().on_dark_gray())

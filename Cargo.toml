@@ -13,3 +13,4 @@ ratatui = { version = "0.26.1", features = ["all-widgets", "serde"] }
 reqwest = "0.12.3"
 soup = "0.5.1"
 tokio = { version = "1.37.0", features = ["full"] }
+tui-textarea = "0.4.0"
