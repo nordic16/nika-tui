@@ -42,3 +42,47 @@ pub async fn get_manga_from_name(query: String) -> reqwest::Result<Option<Comic>
         Ok(None)
     }
 }
+
+
+pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
+    let manga_url = constants::MANGA_URL;
+    let tmp = query.replace(" ", "+");
+
+    let url = format!("{manga_url}/search?q={tmp}");
+
+    let body = reqwest::get(url).await?.text().await?;
+    let soup = Soup::new(&body);
+
+    let manga_src: Vec<_> = soup
+        .class("lg:grid-cols-5")
+        .find()
+        .expect("Not found")
+        .children()
+        .filter(|x| x.display().to_lowercase().contains(&query.to_lowercase()))
+        .collect();
+
+    
+    let mut mangas: Vec<Comic> = Vec::with_capacity(manga_src.len());
+
+    
+    for i in manga_src { // didn't use functional programming here because code was too long
+        let name = i
+            .class("leading-tight")
+            .find()
+            .expect("Couldn't find name")
+            .text();
+
+        let tmp = i
+            .tag("a")
+            .find()
+            .expect("Not found")
+            .get("href")
+            .unwrap();
+        
+        mangas.push(Comic {name, source: format!("{manga_url}{tmp}"), comic_type: ComicType::Manga})
+    
+    }
+
+    Ok(mangas)
+
+}

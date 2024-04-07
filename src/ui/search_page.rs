@@ -4,8 +4,12 @@ use ratatui::{
 };
 
 use tui_textarea::TextArea;
+
+use crate::models::comic::Comic;
 #[derive(Default)]
-pub struct SearchPage;
+pub struct SearchPage {
+    searchResults: Vec<Comic>
+}
 
 impl SearchPage {
     pub fn render_page(area: Rect, frame: &mut Frame, input: &mut TextArea) {
