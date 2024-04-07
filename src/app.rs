@@ -1,5 +1,11 @@
 use std::{default, io};
-use crate::{event_handler::{EventHandler, NikaEvent}, ui::{self, main_page::MainPage, search_page::SearchPage, options_page::OptionsPage, Tui}};
+use crate::{event_handler::{EventHandler, NikaMessage}, models::comic::Comic, ui::{self, main_page::MainPage, options_page::OptionsPage, search_page::SearchPage, Tui}};
+
+use crossterm::{cursor, event::{ KeyCode, KeyEvent}, execute, terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
+use ratatui::{backend::CrosstermBackend, Frame, Terminal};
+use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tui_textarea::TextArea;
+
 
 #[derive(Debug, Default)]
 pub enum Page {
@@ -16,26 +22,44 @@ pub enum InputMode {
     Editing,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone)]
+pub enum NikaAction<'a> {
+    UpdateQuery(&'a str),
+    Render,
+    Quit,
+    Error,
+    Key(KeyEvent)
+}
+
+#[derive(Debug)]
 pub struct App {
     exit: bool,
     page: Page,
     textarea: TextArea<'static>,
-    input_mode: InputMode
+    input_mode: InputMode,
+    action_s: UnboundedSender<NikaAction<'static>>,
+    action_r: UnboundedReceiver<NikaAction<'static>>
+}
+
+impl Default for App {
+    fn default() -> Self {
+        let (s, r) = unbounded_channel::<NikaAction<'static>>();
+
+        Self { exit: Default::default(), page: Default::default(), textarea: Default::default(), 
+            input_mode: Default::default(), action_s: s, action_r: r }
+    }
 }
 
 use std::io::stdout;
 
-use crossterm::{cursor, event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, terminal::{self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
-use ratatui::{backend::CrosstermBackend, layout::Rect, Frame, Terminal};
-use tui_textarea::TextArea;
-
-
-impl App {
-    fn update(&mut self, event: NikaEvent) -> io::Result<()> {
-        if let NikaEvent::Key(key) = event {
-            match self.input_mode {
-                
+impl App{
+    fn update(&mut self, action: NikaAction) -> io::Result<()> {
+        match action {
+            NikaAction::UpdateQuery(_) => todo!(),
+            NikaAction::Render => {},
+            NikaAction::Quit => todo!(),
+            NikaAction::Error => todo!(),
+            NikaAction::Key(key) => match self.input_mode {                
                 InputMode::Normal => {
                     match key.code {
                         KeyCode::Char('q') => self.exit = true,
@@ -51,34 +75,41 @@ impl App {
                     match key.code {
                         KeyCode::Esc => self.input_mode = InputMode::Normal,
                         KeyCode::Enter => {}
-                        _ => {
-                            
+                        _ => {        
                             self.textarea.input(key);
                         }
                     }
                 },
-            }
-
+            },
         }
+            
+        
         Ok(())
       }
 
     /// runs the application's main loop until the user quits
     pub async fn run(&mut self) -> io::Result<()> {
         let mut events = EventHandler::new();
-        let mut terminal = Terminal::new(CrosstermBackend::new(io::stderr()))?;
+        let mut terminal = Terminal::new(CrosstermBackend::new(io::stderr())).unwrap(); 
         
         loop {
-            let event = events.next().await.unwrap();
-            self.update(event.clone())?;
+            let message = events.next().await.unwrap();            
+            match self.send_action(message.clone()) {
+                Ok(_) => {},
+                Err(e) => panic!("Failed to send message {}", e),
+            }
 
-            if let NikaEvent::Render = event {
-                // application render
-                terminal.draw(|f| {
-                  self.render_page(f);
-                })?;
-              
-              } 
+            // "while there are new actions, update the app."
+            // NOTE: Don't use the async version recv(). not a very bright idea given we're messing with UI here.
+            while let Ok(action) = self.action_r.try_recv() {
+                self.update(action.clone())?;
+
+                if let NikaAction::Render = action {
+                    terminal.draw(|f| {
+                        self.render_page(f);
+                    })?;
+                }
+            } 
             
             if self.exit {
                 break;
@@ -95,13 +126,20 @@ impl App {
             Page::Search => {
             // to handle events and stuff.
                 SearchPage::render_page(frame.size(), frame, &mut self.textarea);
-
-
             },
             Page::Options => frame.render_widget(OptionsPage::default(), frame.size()),
         };
     }
 
+    fn send_action(&self, message: NikaMessage) -> Result<(), SendError<NikaAction>> {
+        let message = match message {
+            NikaMessage::Render => NikaAction::Render,
+            NikaMessage::Error => NikaAction::Error,
+            NikaMessage::Key(e) => NikaAction::Key(e),
+            NikaMessage::Quit => NikaAction::Quit,
+        };
+        self.action_s.send(message)
+    }
 
     pub fn init(&mut self) -> io::Result<()> {
         terminal::enable_raw_mode()?;

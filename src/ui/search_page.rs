@@ -1,15 +1,12 @@
 use ratatui::{
     prelude::*,
-    widgets::{block::*, Borders, List, Paragraph, *},
+    widgets::{block::*, Borders, List},
 };
 
 use tui_textarea::TextArea;
 
-use crate::models::comic::Comic;
 #[derive(Default)]
-pub struct SearchPage {
-    searchResults: Vec<Comic>
-}
+pub struct SearchPage;
 
 impl SearchPage {
     pub fn render_page(area: Rect, frame: &mut Frame, input: &mut TextArea) {
