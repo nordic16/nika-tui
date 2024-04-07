@@ -1,6 +1,9 @@
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
-use crate::{constants, models::comic::{Comic, ComicType}};
+use crate::{
+    constants,
+    models::comic::{Comic, ComicType},
+};
 
 // This code probably sucks...
 pub async fn get_manga_from_name(query: String) -> reqwest::Result<Option<Comic>> {
@@ -23,10 +26,10 @@ pub async fn get_manga_from_name(query: String) -> reqwest::Result<Option<Comic>
     // In case it finds something.
     if let Some(first) = src.first() {
         let name = first
-        .class("leading-tight")
-        .find()
-        .expect("Couldn't find name")
-        .text();
+            .class("leading-tight")
+            .find()
+            .expect("Couldn't find name")
+            .text();
 
         tmp = first
             .tag("a")
@@ -36,13 +39,15 @@ pub async fn get_manga_from_name(query: String) -> reqwest::Result<Option<Comic>
             .unwrap();
         let source = format!("{base_url}{tmp}");
 
-        Ok(Some(Comic {name, source, comic_type: ComicType::Manga}))
-    
+        Ok(Some(Comic {
+            name,
+            source,
+            comic_type: ComicType::Manga,
+        }))
     } else {
         Ok(None)
     }
 }
-
 
 pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
     let manga_url = constants::MANGA_URL;
@@ -61,28 +66,24 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
         .filter(|x| x.display().to_lowercase().contains(&query.to_lowercase()))
         .collect();
 
-    
     let mut mangas: Vec<Comic> = Vec::with_capacity(manga_src.len());
 
-    
-    for i in manga_src { // didn't use functional programming here because code was too long
+    for i in manga_src {
+        // didn't use functional programming here because code was too long
         let name = i
             .class("leading-tight")
             .find()
             .expect("Couldn't find name")
             .text();
 
-        let tmp = i
-            .tag("a")
-            .find()
-            .expect("Not found")
-            .get("href")
-            .unwrap();
-        
-        mangas.push(Comic {name, source: format!("{manga_url}{tmp}"), comic_type: ComicType::Manga})
-    
+        let tmp = i.tag("a").find().expect("Not found").get("href").unwrap();
+
+        mangas.push(Comic {
+            name,
+            source: format!("{manga_url}{tmp}"),
+            comic_type: ComicType::Manga,
+        })
     }
 
     Ok(mangas)
-
 }

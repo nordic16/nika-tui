@@ -15,10 +15,13 @@ pub struct Comic {
 
 impl Display for Comic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Name: {}\nSource: {}\nType: {}", self.name, self.source, self.comic_type)
+        write!(
+            f,
+            "Name: {}\nSource: {}\nType: {}",
+            self.name, self.source, self.comic_type
+        )
     }
 }
-
 
 impl Display for ComicType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

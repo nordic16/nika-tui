@@ -13,12 +13,8 @@ impl SearchPage {
         let layout = Layout::default()
             .spacing(2)
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Percentage(20),
-                Constraint::Percentage(80)
-            ]).split(area);
-
-
+            .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
+            .split(area);
 
         let block1 = Block::default()
             .borders(Borders::ALL)
@@ -36,12 +32,10 @@ impl SearchPage {
             .title("Results")
             .title_alignment(Alignment::Center);
 
-        let results = List::new([
-            Text::from("ONE PIECE IS REAL"),
-            Text::from("AYO WTF")
-        ]).block(block2);
+        let results =
+            List::new([Text::from("ONE PIECE IS REAL"), Text::from("AYO WTF")]).block(block2);
 
-        frame.render_widget(input.widget(), layout[0]);        
+        frame.render_widget(input.widget(), layout[0]);
         frame.render_widget(results, layout[1]);
     }
 }

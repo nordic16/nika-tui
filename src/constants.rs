@@ -1,1 +1,1 @@
-pub static MANGA_URL:&str = "https://mangapill.com";
+pub static MANGA_URL: &str = "https://mangapill.com";
