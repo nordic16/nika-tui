@@ -42,12 +42,10 @@ pub enum NikaAction {
 }
 
 pub struct App {
-    exit: bool,
-    page: Page,
+    state: AppState,
 
     // textarea should be an option in order to invalidate it as soon as the user switches to another page.
     textarea: Option<TextArea<'static>>,
-    input_mode: InputMode,
     action_s: UnboundedSender<NikaAction>,
     action_r: UnboundedReceiver<NikaAction>,
 
@@ -58,15 +56,21 @@ pub struct App {
     search_results: Vec<Comic>,
 }
 
+#[derive(Default)]
+pub struct AppState {
+    exit: bool,
+    pub input_mode: InputMode,
+    page: Page,
+}
+
 impl Default for App {
     fn default() -> Self {
         let (s, r) = unbounded_channel::<NikaAction>();
 
         Self {
-            exit: Default::default(),
-            page: Default::default(),
+            state: AppState::default(),
             textarea: Default::default(),
-            input_mode: Default::default(),
+
             action_s: s,
             action_r: r,
             action: None,
@@ -90,33 +94,33 @@ impl App {
             }
             NikaAction::Render => {}
             NikaAction::Error => todo!(),
-            NikaAction::Key(key) => match self.input_mode {
+            NikaAction::Key(key) => match self.state.input_mode {
                 InputMode::Normal => match key.code {
-                    KeyCode::Char('q') => self.exit = true,
+                    KeyCode::Char('q') => self.state.exit = true,
                     KeyCode::Char('s') => {
-                        self.page = Page::Search;
+                        self.state.page = Page::Search;
                         self.textarea = Some(TextArea::default());
                         
                     },
                     KeyCode::Char('o') => {
-                        self.page = Page::Options;
+                        self.state.page = Page::Options;
                         self.textarea = None;
                     },
                     KeyCode::Char('m') => {
-                        self.page = Page::Main;
+                        self.state.page = Page::Main;
                         self.textarea = None;
                     },
                     KeyCode::Char('e') => {
                         // Only goes into editing mode if there's something to edit lol.
                         if let Some(_) = &mut self.textarea {
-                            self.input_mode = InputMode::Editing;
+                            self.state.input_mode = InputMode::Editing;
                         }
                     }
 
                     _ => {}
                 },
                 InputMode::Editing => match key.code {
-                    KeyCode::Esc => self.input_mode = InputMode::Normal,
+                    KeyCode::Esc => self.state.input_mode = InputMode::Normal,
                     KeyCode::Enter => {}
                     _ => {
                         if let Some(textarea) = &mut self.textarea {
@@ -170,7 +174,7 @@ impl App {
                 }
             }
 
-            if self.exit {
+            if self.state.exit {
                 break;
             }
         }
@@ -180,11 +184,11 @@ impl App {
 
     /// Figures out which page is to be rendered based on self.page.
     fn render_page(&mut self, frame: &mut Frame) {
-        match self.page {
+        match self.state.page {
             Page::Main => MainPage::render_page(frame.size(), frame),
             Page::Search => {
                 if let Some(s) = &mut self.textarea {
-                    SearchPage::render_page(frame.size(), frame, s, &self.search_results);
+                    SearchPage::render_page(frame.size(), frame, s, &self.search_results, &self.state);
                 }
                 self.action = Some(NikaAction::UpdateSearchQuery);
             }

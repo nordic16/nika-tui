@@ -94,8 +94,6 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
             },
             None => continue,
         }
-
-        
     }
 
     Ok(mangas)

@@ -14,7 +14,7 @@ impl MainPage {
         let block = Block::default()
             .title("Nika-tui".bold().light_red())
             .title_alignment(Alignment::Center)
-            .border_style(Style::new().on_red())
+            .border_style(Style::new().fg(Color::Red))
             .borders(Borders::ALL)
             .title_bottom(
                 "<q> to quit, <s> for search, <o> for options, <m> for main page."
