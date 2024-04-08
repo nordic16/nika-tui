@@ -1,7 +1,10 @@
 use crate::{
-    event_handler::{EventHandler, NikaMessage}, helpers::{get_manga_from_name, search_manga}, models::comic::Comic, ui::{main_page::MainPage, options_page::OptionsPage, search_page::SearchPage}
+    event_handler::{EventHandler, NikaMessage},
+    helpers::search_manga,
+    models::comic::Comic,
+    ui::{main_page::MainPage, options_page::OptionsPage, search_page::SearchPage},
 };
-use std::{io, ops::Deref, process::Output};
+use std::io;
 
 use crossterm::{
     cursor,
@@ -9,7 +12,6 @@ use crossterm::{
     execute,
     terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use futures::{future::BoxFuture, Future, FutureExt};
 use ratatui::{backend::CrosstermBackend, Frame, Terminal};
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tui_textarea::TextArea;
@@ -42,7 +44,9 @@ pub enum NikaAction {
 pub struct App {
     exit: bool,
     page: Page,
-    textarea: TextArea<'static>,
+
+    // textarea should be an option in order to invalidate it as soon as the user switches to another page.
+    textarea: Option<TextArea<'static>>,
     input_mode: InputMode,
     action_s: UnboundedSender<NikaAction>,
     action_r: UnboundedReceiver<NikaAction>,
@@ -75,12 +79,15 @@ use std::io::stdout;
 
 impl App {
     fn update(&mut self, action: NikaAction) -> io::Result<()> {
-
         match action {
             NikaAction::UpdateSearchQuery => {
-                let content = &self.textarea.lines()[0];
-                self.action_s.send(NikaAction::LoadMangaByName(content.to_owned())).unwrap();
-            },
+                if let Some(text) = &mut self.textarea {
+                    let content = &text.lines()[0];
+                    self.action_s
+                        .send(NikaAction::LoadMangaByName(content.to_owned()))
+                        .unwrap();
+                }
+            }
             NikaAction::Render => {}
             NikaAction::Error => todo!(),
             NikaAction::Key(key) => match self.input_mode {
@@ -89,21 +96,25 @@ impl App {
                     KeyCode::Char('s') => self.page = Page::Search,
                     KeyCode::Char('o') => self.page = Page::Options,
                     KeyCode::Char('m') => self.page = Page::Main,
-                    KeyCode::Char('e') => self.input_mode = InputMode::Editing,
+                    KeyCode::Char('e') => {
+                        // Only goes into editing mode if there's something to edit lol.
+                        if let Some(_) = &mut self.textarea {
+                            self.input_mode = InputMode::Editing;
+                        }
+                    }
 
                     _ => {}
                 },
                 InputMode::Editing => match key.code {
                     KeyCode::Esc => self.input_mode = InputMode::Normal,
-                    KeyCode::Enter => {
-
-                        
-                    }
+                    KeyCode::Enter => {}
                     _ => {
-                        self.textarea.input(key);
+                        if let Some(textarea) = &mut self.textarea {
+                            textarea.input(key);
 
-                        if let Some(action) = &self.action {
-                            self.action_s.send(action.to_owned()).unwrap();
+                            if let Some(action) = &self.action {
+                                self.action_s.send(action.to_owned()).unwrap();
+                            }
                         }
                     }
                 },
@@ -119,7 +130,7 @@ impl App {
                         sender.send(NikaAction::LoadSearchResults(results)).unwrap();
                     }
                 });
-            },
+            }
         }
 
         Ok(())
@@ -162,9 +173,11 @@ impl App {
         match self.page {
             Page::Main => MainPage::render_page(frame.size(), frame),
             Page::Search => {
-                SearchPage::render_page(frame.size(), frame, &mut self.textarea, &self.search_results);
+                if let Some(s) = &mut self.textarea {
+                    SearchPage::render_page(frame.size(), frame, s, &self.search_results);
+                }
                 self.action = Some(NikaAction::UpdateSearchQuery);
-            },
+            }
             Page::Options => OptionsPage::render_page(frame.size(), frame),
         };
     }

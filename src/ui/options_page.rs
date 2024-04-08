@@ -15,13 +15,12 @@ impl OptionsPage {
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_style(Style::new().on_dark_gray());
-            
+
         let text = Paragraph::new("Not implemented")
             .centered()
             .bold()
             .block(block);
 
         frame.render_widget(text, area)
-            
     }
 }

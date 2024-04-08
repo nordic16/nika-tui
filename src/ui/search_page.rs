@@ -34,11 +34,12 @@ impl SearchPage {
             .title("Results")
             .title_alignment(Alignment::Center);
 
+        let items = results
+            .iter()
+            .map(|f| ListItem::new(f.name.as_str()))
+            .collect::<Vec<ListItem>>();
 
-        let items = results.iter().map(|f| {ListItem::new(f.name.as_str())}).collect::<Vec<ListItem>>();
-
-        let results =
-            List::new(items).block(block2);
+        let results = List::new(items).block(block2);
 
         frame.render_widget(input.widget(), layout[0]);
         frame.render_widget(results, layout[1]);

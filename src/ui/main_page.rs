@@ -24,10 +24,8 @@ impl MainPage {
 
         let text = Text::from("Welcome to Nika!".light_red()).centered();
 
-        let paragraph = Paragraph::new(text)
-            .centered()
-            .block(block);
-        
+        let paragraph = Paragraph::new(text).centered().block(block);
+
         frame.render_widget(paragraph, area);
     }
 }
