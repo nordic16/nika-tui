@@ -2,7 +2,8 @@ use crate::helpers::{get_manga_from_name, search_manga};
 
 #[tokio::test]
 async fn test_get_manga_from_name() {
-    let val = get_manga_from_name(String::from("one piece")).await;
+    let query = String::from("one piece");
+    let val = get_manga_from_name(&query).await;
 
     match val {
         Ok(opt) => {

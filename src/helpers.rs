@@ -6,7 +6,7 @@ use crate::{
 };
 
 // This code probably sucks...
-pub async fn get_manga_from_name(query: String) -> reqwest::Result<Option<Comic>> {
+pub async fn get_manga_from_name(query: &str) -> reqwest::Result<Option<Comic>> {
     let base_url = constants::MANGA_URL;
     let mut tmp = query.replace(" ", "+");
 

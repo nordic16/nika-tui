@@ -1,8 +1,7 @@
 use crate::{
-    event_handler::{EventHandler, NikaMessage},
-    ui::{main_page::MainPage, options_page::OptionsPage, search_page::SearchPage},
+    event_handler::{EventHandler, NikaMessage}, helpers::{get_manga_from_name, search_manga}, models::comic::Comic, ui::{main_page::MainPage, options_page::OptionsPage, search_page::SearchPage}
 };
-use std::io;
+use std::{io, ops::Deref, process::Output};
 
 use crossterm::{
     cursor,
@@ -10,6 +9,7 @@ use crossterm::{
     execute,
     terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use futures::{future::BoxFuture, Future, FutureExt};
 use ratatui::{backend::CrosstermBackend, Frame, Terminal};
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tui_textarea::TextArea;
@@ -30,26 +30,33 @@ pub enum InputMode {
 }
 
 #[derive(Debug, Clone)]
-pub enum NikaAction<'a> {
-    UpdateQuery(&'a str),
+pub enum NikaAction {
+    UpdateSearchQuery,
     Render,
     Error,
     Key(KeyEvent),
+    LoadSearchResults(Vec<Comic>),
+    LoadMangaByName(String),
 }
 
-#[derive(Debug)]
 pub struct App {
     exit: bool,
     page: Page,
     textarea: TextArea<'static>,
     input_mode: InputMode,
-    action_s: UnboundedSender<NikaAction<'static>>,
-    action_r: UnboundedReceiver<NikaAction<'static>>,
+    action_s: UnboundedSender<NikaAction>,
+    action_r: UnboundedReceiver<NikaAction>,
+
+    // Action to run when needed.
+    action: Option<NikaAction>,
+
+    // APP DATA, might be refactored in the future:
+    search_results: Vec<Comic>,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let (s, r) = unbounded_channel::<NikaAction<'static>>();
+        let (s, r) = unbounded_channel::<NikaAction>();
 
         Self {
             exit: Default::default(),
@@ -58,6 +65,8 @@ impl Default for App {
             input_mode: Default::default(),
             action_s: s,
             action_r: r,
+            action: None,
+            search_results: Vec::new(),
         }
     }
 }
@@ -66,8 +75,12 @@ use std::io::stdout;
 
 impl App {
     fn update(&mut self, action: NikaAction) -> io::Result<()> {
+
         match action {
-            NikaAction::UpdateQuery(_) => todo!(),
+            NikaAction::UpdateSearchQuery => {
+                let content = &self.textarea.lines()[0];
+                self.action_s.send(NikaAction::LoadMangaByName(content.to_owned())).unwrap();
+            },
             NikaAction::Render => {}
             NikaAction::Error => todo!(),
             NikaAction::Key(key) => match self.input_mode {
@@ -82,11 +95,30 @@ impl App {
                 },
                 InputMode::Editing => match key.code {
                     KeyCode::Esc => self.input_mode = InputMode::Normal,
-                    KeyCode::Enter => {}
+                    KeyCode::Enter => {
+
+                        
+                    }
                     _ => {
                         self.textarea.input(key);
+
+                        if let Some(action) = &self.action {
+                            self.action_s.send(action.to_owned()).unwrap();
+                        }
                     }
                 },
+            },
+            NikaAction::LoadSearchResults(comics) => self.search_results = comics,
+            NikaAction::LoadMangaByName(query) => {
+                let sender = self.action_s.clone();
+
+                tokio::spawn(async move {
+                    let results = search_manga(&query).await;
+
+                    if let Ok(results) = results {
+                        sender.send(NikaAction::LoadSearchResults(results)).unwrap();
+                    }
+                });
             },
         }
 
@@ -96,7 +128,7 @@ impl App {
     /// runs the application main loop until the user quits
     pub async fn run(&mut self) -> io::Result<()> {
         let mut events = EventHandler::new();
-        let mut terminal = Terminal::new(CrosstermBackend::new(io::stderr())).unwrap();
+        let mut terminal = Terminal::new(CrosstermBackend::new(io::stderr()))?;
 
         loop {
             let message = events.next().await.unwrap();
@@ -129,7 +161,10 @@ impl App {
     fn render_page(&mut self, frame: &mut Frame) {
         match self.page {
             Page::Main => MainPage::render_page(frame.size(), frame),
-            Page::Search => SearchPage::render_page(frame.size(), frame, &mut self.textarea),
+            Page::Search => {
+                SearchPage::render_page(frame.size(), frame, &mut self.textarea, &self.search_results);
+                self.action = Some(NikaAction::UpdateSearchQuery);
+            },
             Page::Options => OptionsPage::render_page(frame.size(), frame),
         };
     }

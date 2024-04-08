@@ -1,15 +1,17 @@
 use ratatui::{
     prelude::*,
-    widgets::{block::*, Borders, List},
+    widgets::{block::*, Borders, List, ListItem},
 };
 
 use tui_textarea::TextArea;
+
+use crate::models::comic::Comic;
 
 #[derive(Default)]
 pub struct SearchPage;
 
 impl SearchPage {
-    pub fn render_page(area: Rect, frame: &mut Frame, input: &mut TextArea) {
+    pub fn render_page(area: Rect, frame: &mut Frame, input: &mut TextArea, results: &Vec<Comic>) {
         let layout = Layout::default()
             .spacing(2)
             .direction(Direction::Vertical)
@@ -32,8 +34,11 @@ impl SearchPage {
             .title("Results")
             .title_alignment(Alignment::Center);
 
+
+        let items = results.iter().map(|f| {ListItem::new(f.name.as_str())}).collect::<Vec<ListItem>>();
+
         let results =
-            List::new([Text::from("ONE PIECE IS REAL"), Text::from("AYO WTF")]).block(block2);
+            List::new(items).block(block2);
 
         frame.render_widget(input.widget(), layout[0]);
         frame.render_widget(results, layout[1]);
