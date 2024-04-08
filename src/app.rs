@@ -93,9 +93,19 @@ impl App {
             NikaAction::Key(key) => match self.input_mode {
                 InputMode::Normal => match key.code {
                     KeyCode::Char('q') => self.exit = true,
-                    KeyCode::Char('s') => self.page = Page::Search,
-                    KeyCode::Char('o') => self.page = Page::Options,
-                    KeyCode::Char('m') => self.page = Page::Main,
+                    KeyCode::Char('s') => {
+                        self.page = Page::Search;
+                        self.textarea = Some(TextArea::default());
+                        
+                    },
+                    KeyCode::Char('o') => {
+                        self.page = Page::Options;
+                        self.textarea = None;
+                    },
+                    KeyCode::Char('m') => {
+                        self.page = Page::Main;
+                        self.textarea = None;
+                    },
                     KeyCode::Char('e') => {
                         // Only goes into editing mode if there's something to edit lol.
                         if let Some(_) = &mut self.textarea {
