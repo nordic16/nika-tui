@@ -8,7 +8,7 @@ use crate::{
 // This code probably sucks...
 pub async fn get_manga_from_name(query: &str) -> reqwest::Result<Option<Comic>> {
     let base_url = constants::MANGA_URL;
-    let mut tmp = query.replace(" ", "+");
+    let mut tmp = query.replace(' ', "+");
 
     let url = format!("{base_url}/search?q={tmp}");
 
@@ -51,7 +51,7 @@ pub async fn get_manga_from_name(query: &str) -> reqwest::Result<Option<Comic>> 
 
 pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
     let manga_url = constants::MANGA_URL;
-    let tmp = query.replace(" ", "+");
+    let tmp = query.replace(' ', "+");
 
     let url = format!("{manga_url}/search?q={tmp}");
 
@@ -60,7 +60,7 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
 
     let tmp = soup.class("lg:grid-cols-5").find();
 
-    if let None = tmp {
+    if tmp.is_none() {
         // Couldn't find anything.
         return Ok(Vec::new());
     }

@@ -12,11 +12,7 @@ use crossterm::{
     execute,
     terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    widgets::{List, ListState},
-    Frame, Terminal,
-};
+use ratatui::{backend::CrosstermBackend, widgets::ListState, Frame, Terminal};
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tui_textarea::TextArea;
 
@@ -118,7 +114,7 @@ impl App {
                     }
                     KeyCode::Char('e') => {
                         // Only goes into editing mode if there's something to edit lol.
-                        if let Some(_) = &mut self.textarea {
+                        if self.textarea.is_some() {
                             self.state.input_mode = InputMode::Editing;
                         }
                     }

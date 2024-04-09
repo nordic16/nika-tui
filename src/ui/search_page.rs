@@ -1,6 +1,6 @@
 use ratatui::{
     prelude::*,
-    widgets::{block::*, Borders, List, ListItem, ListState},
+    widgets::{block::*, Borders, List, ListItem},
 };
 
 use tui_textarea::TextArea;
@@ -18,7 +18,7 @@ impl SearchPage {
         area: Rect,
         frame: &mut Frame,
         input: &mut TextArea,
-        results: &Vec<Comic>,
+        results: &[Comic],
         app_state: &mut AppState,
     ) {
         // decides the right color for the results and text bar
