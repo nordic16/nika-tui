@@ -12,7 +12,7 @@ use crossterm::{
     execute,
     terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{backend::CrosstermBackend, Frame, Terminal};
+use ratatui::{backend::CrosstermBackend, widgets::{List, ListState}, Frame, Terminal};
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tui_textarea::TextArea;
 
@@ -61,6 +61,8 @@ pub struct AppState {
     exit: bool,
     pub input_mode: InputMode,
     page: Page,
+    // Should probably be an option.
+    pub list_state: ListState,
 }
 
 impl Default for App {
@@ -99,6 +101,7 @@ impl App {
                     KeyCode::Char('q') => self.state.exit = true,
                     KeyCode::Char('s') => {
                         self.state.page = Page::Search;
+                        self.state.list_state = ListState::default().with_selected(Some(0));
                         self.textarea = Some(TextArea::default());
                         
                     },
@@ -115,12 +118,47 @@ impl App {
                         if let Some(_) = &mut self.textarea {
                             self.state.input_mode = InputMode::Editing;
                         }
-                    }
+                    },
+
+                    KeyCode::Down => {
+                        let index = match self.state.list_state.selected() {
+                            Some(i) => {
+                                if i == self.search_results.len() - 1 { // Prevent user from selecting elements below the list
+                                    i
+                                
+                                } else {
+                                    i + 1
+                                }
+                            },
+                            None => 0,
+                        };
+
+                        self.state.list_state.select(Some(index));
+                    },
+
+                    KeyCode::Up => {
+                        let index = match self.state.list_state.selected() {
+                            Some(i) => { // There's no element -1, duhhh
+                                if i > 0 {
+                                    i - 1
+                                
+                                } else {
+                                    i
+                                }
+                            },
+                            None => 1,
+                        };
+
+                        self.state.list_state.select(Some(index));
+                    },
 
                     _ => {}
                 },
                 InputMode::Editing => match key.code {
-                    KeyCode::Esc => self.state.input_mode = InputMode::Normal,
+                    KeyCode::Esc => {
+                        self.state.input_mode = InputMode::Normal;
+                        self.state.list_state.select(Some(0));
+                    },
                     KeyCode::Enter => {}
                     _ => {
                         if let Some(textarea) = &mut self.textarea {
@@ -188,7 +226,7 @@ impl App {
             Page::Main => MainPage::render_page(frame.size(), frame),
             Page::Search => {
                 if let Some(s) = &mut self.textarea {
-                    SearchPage::render_page(frame.size(), frame, s, &self.search_results, &self.state);
+                    SearchPage::render_page(frame.size(), frame, s, &self.search_results, &mut self.state);
                 }
                 self.action = Some(NikaAction::UpdateSearchQuery);
             }
