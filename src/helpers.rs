@@ -58,18 +58,19 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
     let body = reqwest::get(url).await?.text().await?;
     let soup = Soup::new(&body);
 
-    let tmp = soup
-        .class("lg:grid-cols-5")
-        .find();
+    let tmp = soup.class("lg:grid-cols-5").find();
 
-    if let None = tmp { // Couldn't find anything.
-        return Ok(Vec::new())
+    if let None = tmp {
+        // Couldn't find anything.
+        return Ok(Vec::new());
     }
 
-    let manga_src: Vec<_> = tmp.unwrap().children()
+    let manga_src: Vec<_> = tmp
+        .unwrap()
+        .children()
         .filter(|x| x.display().to_lowercase().contains(&query.to_lowercase()))
         .collect();
-    
+
     let mut mangas: Vec<Comic> = Vec::with_capacity(manga_src.len());
 
     for i in manga_src {
@@ -85,13 +86,13 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
         match tmp {
             Some(e) => {
                 let tmp = e.get("href").unwrap();
-                
+
                 mangas.push(Comic {
                     name,
                     source: format!("{manga_url}{tmp}"),
                     comic_type: ComicType::Manga,
                 })
-            },
+            }
             None => continue,
         }
     }

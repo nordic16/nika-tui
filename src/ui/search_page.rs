@@ -5,14 +5,22 @@ use ratatui::{
 
 use tui_textarea::TextArea;
 
-use crate::{app::{AppState, InputMode}, models::comic::Comic};
+use crate::{
+    app::{AppState, InputMode},
+    models::comic::Comic,
+};
 
 #[derive(Default)]
 pub struct SearchPage;
 
 impl SearchPage {
-    pub fn render_page(area: Rect, frame: &mut Frame, input: &mut TextArea, results: &Vec<Comic>, app_state: &mut AppState) {
-
+    pub fn render_page(
+        area: Rect,
+        frame: &mut Frame,
+        input: &mut TextArea,
+        results: &Vec<Comic>,
+        app_state: &mut AppState,
+    ) {
         // decides the right color for the results and text bar
         let (scolor, rcolor) = match app_state.input_mode {
             InputMode::Normal => (Color::default(), Color::Yellow),
@@ -46,7 +54,9 @@ impl SearchPage {
             .map(|f| ListItem::new(f.name.as_str()))
             .collect::<Vec<ListItem>>();
 
-        let results = List::new(items).block(block2).highlight_style(Style::new().fg(Color::Yellow));
+        let results = List::new(items)
+            .block(block2)
+            .highlight_style(Style::new().fg(Color::Yellow));
 
         frame.render_widget(input.widget(), layout[0]);
 
