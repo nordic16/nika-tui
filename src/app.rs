@@ -2,7 +2,10 @@ use crate::{
     event_handler::{EventHandler, NikaMessage},
     helpers::search_manga,
     models::comic::Comic,
-    ui::{comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage, search_page::SearchPage},
+    ui::{
+        comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage,
+        search_page::SearchPage,
+    },
 };
 use std::io;
 
@@ -61,7 +64,7 @@ pub struct App {
 
     // APP DATA, might be refactored in the future:
     search_results: Vec<Comic>,
-    selected_comic: Option<Comic>
+    selected_comic: Option<Comic>,
 }
 
 #[derive(Default, Clone)]
@@ -129,7 +132,7 @@ impl App {
                         }
                     }
 
-                    KeyCode::Down => {
+                    KeyCode::Down | KeyCode::Left => {
                         let index = match self.state.list_state.selected() {
                             Some(i) => {
                                 if i == self.search_results.len() - 1 {
@@ -146,7 +149,7 @@ impl App {
                         self.state.list_state.select(Some(index));
                     }
 
-                    KeyCode::Up => {
+                    KeyCode::Up | KeyCode::Right => {
                         let index = match self.state.list_state.selected() {
                             Some(i) => {
                                 // There's no element -1, duhhh
@@ -161,13 +164,13 @@ impl App {
 
                         self.selected_comic = Some(self.search_results[index].clone());
                         self.state.list_state.select(Some(index));
-                    },
+                    }
 
                     KeyCode::Enter => {
                         if let Some(action) = &self.action {
                             self.action_s.send(action.to_owned()).unwrap();
                         }
-                    },
+                    }
 
                     _ => {}
                 },
@@ -202,9 +205,8 @@ impl App {
             }
             NikaAction::LoadViewPage(comic) => {
                 self.state.page = Page::ViewComic(comic);
-            },
+            }
         }
-
         Ok(())
     }
 
@@ -242,7 +244,6 @@ impl App {
 
     /// Figures out which page is to be rendered based on self.page.
     fn render_page(&mut self, frame: &mut Frame) {
-
         match self.state.page.clone() {
             Page::Main => MainPage::render_page(frame.size(), frame),
             Page::Search => {
@@ -258,17 +259,17 @@ impl App {
 
                 // If the user isn't editing anything, then the right action will be to load the comic view page.
                 self.action = match self.state.input_mode {
-                    InputMode::Normal => {
-                        match &self.selected_comic {
-                            Some(comic) => Some(NikaAction::LoadViewPage(comic.clone())),
-                            None => None,
-                        }
+                    InputMode::Normal => match &self.selected_comic {
+                        Some(comic) => Some(NikaAction::LoadViewPage(comic.clone())),
+                        None => None,
                     },
-                    InputMode::Editing => Some(NikaAction::UpdateSearchQuery)
+                    InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
                 }
             }
             Page::Options => OptionsPage::render_page(frame.size(), frame),
-            Page::ViewComic(comic) => ComicPage::render_page(frame.size(), frame, &mut self.state, comic.to_owned()),
+            Page::ViewComic(comic) => {
+                ComicPage::render_page(frame.size(), frame, &mut self.state, comic.to_owned())
+            }
         };
     }
 

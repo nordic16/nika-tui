@@ -1,23 +1,7 @@
-use crate::helpers::{get_manga_from_name, search_manga};
-
-#[tokio::test]
-async fn test_get_manga_from_name() {
-    let query = String::from("one piece");
-    let val = get_manga_from_name(&query).await;
-
-    match val {
-        Ok(opt) => {
-            // everything fine.
-            if let Some(comic) = opt {
-                println!("Comic found!");
-                println!("{}", comic);
-            } else {
-                println!("Comic not found!");
-            }
-        }
-        Err(e) => println!("Error! {}", e),
-    }
-}
+use crate::{
+    helpers::{self, search_manga},
+    models::comic::{Comic, ComicType},
+};
 
 #[tokio::test]
 async fn test_search_manga() {
@@ -32,5 +16,31 @@ async fn test_search_manga() {
             }
         }
         Err(e) => println!("Wtf happened? {}", e),
+    }
+}
+
+#[tokio::test]
+async fn test_scrape_manga_info() {
+    let comic = Comic {
+        name: String::from("One Piece"),
+        source: String::from("https://mangapill.com/manga/2/one-piece"),
+        comic_type: ComicType::Manga,
+        manga_info: None,
+    };
+
+    let result = helpers::get_comic_info(&comic).await.unwrap();
+
+    match result {
+        Some(val) => {
+            println!("Comic info secured!");
+            println!(
+                "Year: {}\nStatus: {}\nGenres: {}",
+                val.year,
+                val.status,
+                val.genres.join(",")
+            )
+        }
+
+        None => panic!("Couldn't get info."),
     }
 }
