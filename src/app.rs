@@ -14,7 +14,8 @@ use crossterm::{
 };
 use ratatui::{
     backend::CrosstermBackend,
-    widgets::{List, ListState},
+    style::{Style, Stylize},
+    widgets::ListState,
     Frame, Terminal,
 };
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -122,7 +123,7 @@ impl App {
                     }
                     KeyCode::Char('e') => {
                         // Only goes into editing mode if there's something to edit lol.
-                        if let Some(_) = &mut self.textarea {
+                        if let Some(txt) = &mut self.textarea {
                             self.state.input_mode = InputMode::Editing;
                             txt.set_cursor_style(Style::new().rapid_blink());
                         }

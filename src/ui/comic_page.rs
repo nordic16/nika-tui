@@ -1,7 +1,7 @@
 use crate::{app::AppState, models::comic::Comic};
 
 use ratatui::{
-    prelude::*, symbols::border, widgets::{block::*, Borders, List, ListItem, Paragraph}
+    prelude::*, symbols::border, widgets::{block::*, Borders, Paragraph}
 };
 
 pub struct ComicPage;
