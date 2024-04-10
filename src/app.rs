@@ -2,7 +2,7 @@ use crate::{
     event_handler::{EventHandler, NikaMessage},
     helpers::search_manga,
     models::comic::Comic,
-    ui::{main_page::MainPage, options_page::OptionsPage, search_page::SearchPage},
+    ui::{comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage, search_page::SearchPage},
 };
 use std::io;
 
@@ -14,28 +14,30 @@ use crossterm::{
 };
 use ratatui::{
     backend::CrosstermBackend,
-    widgets::{List, ListState},
+    style::{Style, Stylize},
+    widgets::ListState,
     Frame, Terminal,
 };
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tui_textarea::TextArea;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum Page {
     #[default]
     Main,
     Search,
     Options,
+    ViewComic(Comic),
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone)]
 pub enum InputMode {
     #[default]
     Normal,
     Editing,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum NikaAction {
     UpdateSearchQuery,
     Render,
@@ -43,6 +45,7 @@ pub enum NikaAction {
     Key(KeyEvent),
     LoadSearchResults(Vec<Comic>),
     LoadMangaByName(String),
+    LoadViewPage(Comic),
 }
 
 pub struct App {
@@ -58,9 +61,10 @@ pub struct App {
 
     // APP DATA, might be refactored in the future:
     search_results: Vec<Comic>,
+    selected_comic: Option<Comic>
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct AppState {
     exit: bool,
     pub input_mode: InputMode,
@@ -81,6 +85,7 @@ impl Default for App {
             action_r: r,
             action: None,
             search_results: Vec::new(),
+            selected_comic: None,
         }
     }
 }
@@ -118,8 +123,9 @@ impl App {
                     }
                     KeyCode::Char('e') => {
                         // Only goes into editing mode if there's something to edit lol.
-                        if let Some(_) = &mut self.textarea {
+                        if let Some(txt) = &mut self.textarea {
                             self.state.input_mode = InputMode::Editing;
+                            txt.set_cursor_style(Style::new().rapid_blink());
                         }
                     }
 
@@ -136,6 +142,7 @@ impl App {
                             None => 0,
                         };
 
+                        self.selected_comic = Some(self.search_results[index].clone());
                         self.state.list_state.select(Some(index));
                     }
 
@@ -152,8 +159,15 @@ impl App {
                             None => 1,
                         };
 
+                        self.selected_comic = Some(self.search_results[index].clone());
                         self.state.list_state.select(Some(index));
-                    }
+                    },
+
+                    KeyCode::Enter => {
+                        if let Some(action) = &self.action {
+                            self.action_s.send(action.to_owned()).unwrap();
+                        }
+                    },
 
                     _ => {}
                 },
@@ -186,6 +200,9 @@ impl App {
                     }
                 });
             }
+            NikaAction::LoadViewPage(comic) => {
+                self.state.page = Page::ViewComic(comic);
+            },
         }
 
         Ok(())
@@ -225,7 +242,8 @@ impl App {
 
     /// Figures out which page is to be rendered based on self.page.
     fn render_page(&mut self, frame: &mut Frame) {
-        match self.state.page {
+
+        match self.state.page.clone() {
             Page::Main => MainPage::render_page(frame.size(), frame),
             Page::Search => {
                 if let Some(s) = &mut self.textarea {
@@ -237,9 +255,20 @@ impl App {
                         &mut self.state,
                     );
                 }
-                self.action = Some(NikaAction::UpdateSearchQuery);
+
+                // If the user isn't editing anything, then the right action will be to load the comic view page.
+                self.action = match self.state.input_mode {
+                    InputMode::Normal => {
+                        match &self.selected_comic {
+                            Some(comic) => Some(NikaAction::LoadViewPage(comic.clone())),
+                            None => None,
+                        }
+                    },
+                    InputMode::Editing => Some(NikaAction::UpdateSearchQuery)
+                }
             }
             Page::Options => OptionsPage::render_page(frame.size(), frame),
+            Page::ViewComic(comic) => ComicPage::render_page(frame.size(), frame, &mut self.state, comic.to_owned()),
         };
     }
 

@@ -1,6 +1,6 @@
 use ratatui::{
     prelude::*,
-    widgets::{block::*, Borders, List, ListItem, ListState},
+    widgets::{block::*, Borders, List, ListItem},
 };
 
 use tui_textarea::TextArea;
@@ -59,7 +59,6 @@ impl SearchPage {
             .highlight_style(Style::new().fg(Color::Yellow));
 
         frame.render_widget(input.widget(), layout[0]);
-
-        frame.render_stateful_widget(results, layout[1], &mut (app_state.list_state));
+        frame.render_stateful_widget(results, layout[1], &mut app_state.list_state);
     }
 }
