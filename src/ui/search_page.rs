@@ -18,7 +18,7 @@ impl SearchPage {
         area: Rect,
         frame: &mut Frame,
         input: &mut TextArea,
-        results: &Vec<Comic>,
+        results: &[Comic],
         app_state: &mut AppState,
     ) {
         // decides the right color for the results and text bar

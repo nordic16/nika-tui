@@ -29,29 +29,25 @@ impl EventHandler {
                 // Gets the event.
                 let crossterm_event = reader.next().fuse();
                 tokio::select! { // Checks the type of some event and sends it through tx.
-                  maybe_event = crossterm_event => {
-                    match maybe_event {
-                      Some(Ok(evt)) => {
-                        match evt {
-                          Event::Key(key) => {
-                            if key.kind == KeyEventKind::Press {
-                              // Actually sends the event.
-                              _tx.send(NikaMessage::Key(key)).unwrap();
+                    maybe_event = crossterm_event => {
+                        match maybe_event {
+                            Some(Ok(evt)) => {
+                                if let Event::Key(key) = evt {
+                                    if key.kind == KeyEventKind::Press {
+                                        // Actually sends the event.
+                                        _tx.send(NikaMessage::Key(key)).unwrap();
+                                    }
+                                }
                             }
-                          },
-                          _ => {},
+                            Some(Err(_)) => {
+                                _tx.send(NikaMessage::Error).unwrap();
+                            }
+                            None => {},
                         }
-                      }
-                      Some(Err(_)) => {
-                        _tx.send(NikaMessage::Error).unwrap();
-                      }
-                      None => {},
-                    }
                   },
-                  _ = render_delay => {
-                    _tx.send(NikaMessage::Render).unwrap();
-                  }
-
+                    _ = render_delay => {
+                        _tx.send(NikaMessage::Render).unwrap();
+                    }
                 }
             }
         });
