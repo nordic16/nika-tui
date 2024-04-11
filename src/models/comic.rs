@@ -15,7 +15,7 @@ pub struct Comic {
     pub manga_info: Option<ComicInfo>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ComicInfo {
     pub year: u16,
     pub status: String,

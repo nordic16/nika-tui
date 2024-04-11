@@ -1,7 +1,7 @@
 use crate::{
     event_handler::{EventHandler, NikaMessage},
-    helpers::search_manga,
-    models::comic::Comic,
+    helpers::{self, search_manga},
+    models::comic::{Comic, ComicInfo},
     ui::{
         comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage,
         search_page::SearchPage,
@@ -48,7 +48,8 @@ pub enum NikaAction {
     Key(KeyEvent),
     LoadSearchResults(Vec<Comic>),
     LoadMangaByName(String),
-    LoadViewPage(Comic),
+    SelectComic(Comic),
+    RenderComicPage(ComicInfo),
 }
 
 pub struct App {
@@ -203,9 +204,23 @@ impl App {
                     }
                 });
             }
-            NikaAction::LoadViewPage(comic) => {
-                self.state.page = Page::ViewComic(comic);
+            NikaAction::SelectComic(comic) => {
+                let sender = self.action_s.clone();
+
+                // Loads comic info.
+                tokio::spawn(async move {
+                    if let Ok(Some(info)) = helpers::get_comic_info(&comic).await {
+                        sender.send(NikaAction::RenderComicPage(info)).unwrap();
+                    }
+                });
+
             }
+            NikaAction::RenderComicPage(info) => {
+                if let Some(comic) = &mut self.selected_comic {
+                    comic.manga_info = Some(info);
+                    self.state.page = Page::ViewComic(comic.to_owned());
+                }
+            },
         }
         Ok(())
     }
@@ -260,7 +275,7 @@ impl App {
                 // If the user isn't editing anything, then the right action will be to load the comic view page.
                 self.action = match self.state.input_mode {
                     InputMode::Normal => match &self.selected_comic {
-                        Some(comic) => Some(NikaAction::LoadViewPage(comic.clone())),
+                        Some(comic) => Some(NikaAction::SelectComic(comic.clone())),
                         None => None,
                     },
                     InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
@@ -268,7 +283,7 @@ impl App {
             }
             Page::Options => OptionsPage::render_page(frame.size(), frame),
             Page::ViewComic(comic) => {
-                ComicPage::render_page(frame.size(), frame, &mut self.state, comic.to_owned())
+                ComicPage::render_page(frame.size(), frame, &mut self.state, &comic)
             }
         };
     }
