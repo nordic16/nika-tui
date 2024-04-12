@@ -3,7 +3,7 @@ use crate::{app::AppState, models::comic::Comic};
 use ratatui::{
     prelude::*,
     symbols::border,
-    widgets::{block::*, Borders, Paragraph},
+    widgets::{block::*, Borders, List, Paragraph},
 };
 
 pub struct ComicPage;
@@ -38,17 +38,16 @@ impl ComicPage {
         .centered()
         .block(block.clone());
 
-
-        let lines: Vec<Text> = comic.chapters.iter().map(|f| Text::from(f.name.as_str())).collect();
-
-        
-        let chap = Paragraph::new(Text::from("Chapters"))
-            .bold()
-            .centered()
-            .block(block);
+        let list = comic
+            .chapters
+            .iter()
+            .map(|f| Text::from(f.name.as_str()))
+            .collect::<List>()
+            .block(block)
+            .highlight_style(Style::new().fg(Color::LightGreen));
 
         frame.render_widget(title, inner_layout[0]);
         frame.render_widget(more_info, inner_layout[1]);
-        frame.render_widget(chap, main_layout[1])
+        frame.render_stateful_widget(list, main_layout[1], &mut app_state.list_state);
     }
 }

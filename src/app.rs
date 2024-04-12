@@ -1,6 +1,6 @@
 use crate::{
     event_handler::{EventHandler, NikaMessage},
-    helpers::{self, search_manga},
+    helpers::{self, get_selection_index_below, search_manga},
     models::comic::{Chapter, Comic, ComicInfo},
     ui::{
         comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage,
@@ -138,17 +138,10 @@ impl App {
                     }
 
                     KeyCode::Down | KeyCode::Left => {
-                        let index = match self.state.list_state.selected() {
-                            Some(i) => {
-                                if i == self.search_results.len() - 1 {
-                                    // Prevent user from selecting elements below the list
-                                    i
-                                } else {
-                                    i + 1
-                                }
-                            }
-                            None => 0,
-                        };
+                        let index = get_selection_index_below(
+                            self.state.list_state.selected(),
+                            self.search_results.len(),
+                        );
 
                         self.selected_comic = Some(self.search_results[index].clone());
                         self.state.list_state.select(Some(index));
@@ -227,6 +220,8 @@ impl App {
                 if let Some(comic) = &mut self.selected_comic {
                     comic.manga_info = Some(info);
                     self.state.page = Page::ViewComic(comic.to_owned());
+                    self.action = None; // for the time being.
+                    self.textarea = None; // prevents user from entering edit mode.
                 }
             }
             NikaAction::LiftLoadingScreen => self.state.loading = false,
@@ -234,7 +229,7 @@ impl App {
                 if let Some(comic) = &mut self.selected_comic {
                     comic.chapters = chapters;
                 }
-            },
+            }
         }
         Ok(())
     }
@@ -289,7 +284,10 @@ impl App {
 
                     // If the user isn't editing anything, then the right action will be to load the comic view page.
                     self.action = match self.state.input_mode {
-                        InputMode::Normal => self.selected_comic.as_ref().map(|comic| NikaAction::SelectComic(comic.to_owned())),
+                        InputMode::Normal => self
+                            .selected_comic
+                            .as_ref()
+                            .map(|comic| NikaAction::SelectComic(comic.to_owned())),
                         InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
                     }
                 }
