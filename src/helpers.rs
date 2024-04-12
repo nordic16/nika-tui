@@ -2,7 +2,7 @@ use soup::{NodeExt, QueryBuilderExt, Soup};
 
 use crate::{
     constants,
-    models::comic::{Comic, ComicInfo, ComicType},
+    models::comic::{Chapter, Comic, ComicInfo, ComicType},
 };
 
 async fn get_search_response_body(query: &str) -> reqwest::Result<String> {
@@ -55,6 +55,7 @@ pub async fn search_manga(query: &str) -> reqwest::Result<Vec<Comic>> {
                     source: format!("{manga_url}{tmp}"),
                     comic_type: ComicType::Manga,
                     manga_info: None,
+                    chapters: Vec::new(),
                 })
             }
             None => continue,
@@ -73,7 +74,7 @@ pub async fn get_comic_info(comic: &Comic) -> reqwest::Result<Option<ComicInfo>>
     if let Some(container) = info_div {
         let values: Vec<_> = container.tag("div").find_all().collect();
 
-        if values.len() == 0 {
+        if values.is_empty() {
             return Ok(None);
         }
 
@@ -88,4 +89,22 @@ pub async fn get_comic_info(comic: &Comic) -> reqwest::Result<Option<ComicInfo>>
     }
 
     Ok(None)
+}
+
+pub async fn get_chapters(comic: &Comic) -> reqwest::Result<Vec<Chapter>> {
+    let base_url = constants::MANGA_URL;
+
+    let manga_page = reqwest::get(&comic.source).await?.text().await?;
+    let soup = Soup::new(&manga_page);
+
+    let chapter_urls: Vec<_> = soup.tag("a").class("border-border").find_all().collect();
+    let chapters: Vec<Chapter> = chapter_urls
+        .into_iter()
+        .map(|f| Chapter {
+            name: f.text(),
+            source: format!("{base_url}{}", f.get("href").unwrap()),
+        })
+        .collect();
+
+    Ok(chapters)
 }

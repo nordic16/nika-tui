@@ -26,6 +26,7 @@ async fn test_scrape_manga_info() {
         source: String::from("https://mangapill.com/manga/2/one-piece"),
         comic_type: ComicType::Manga,
         manga_info: None,
+        chapters: Vec::new(),
     };
 
     let result = helpers::get_comic_info(&comic).await.unwrap();
@@ -42,5 +43,26 @@ async fn test_scrape_manga_info() {
         }
 
         None => panic!("Couldn't get info."),
+    }
+}
+
+#[tokio::test]
+async fn test_get_chapters() {
+    let comic = Comic {
+        name: String::from("One Piece"),
+        source: String::from("https://mangapill.com/manga/2/one-piece"),
+        comic_type: ComicType::Manga,
+        manga_info: None,
+        chapters: Vec::new(),
+    };
+
+    if let Ok(chapters) = helpers::get_chapters(&comic).await {
+        println!("Printing first 25 chapters....");
+
+        // Print only the last 25 chapters lol.
+        for i in 0..25 {
+            let chapter = &chapters[i];
+            println!("{} ({})", chapter.name, chapter.source)
+        }
     }
 }

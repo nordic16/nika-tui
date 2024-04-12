@@ -38,6 +38,10 @@ impl ComicPage {
         .centered()
         .block(block.clone());
 
+
+        let lines: Vec<Text> = comic.chapters.iter().map(|f| Text::from(f.name.as_str())).collect();
+
+        
         let chap = Paragraph::new(Text::from("Chapters"))
             .bold()
             .centered()

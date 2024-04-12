@@ -1,7 +1,7 @@
 use crate::{
     event_handler::{EventHandler, NikaMessage},
     helpers::{self, search_manga},
-    models::comic::{Comic, ComicInfo},
+    models::comic::{Chapter, Comic, ComicInfo},
     ui::{
         comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage,
         search_page::SearchPage,
@@ -50,6 +50,7 @@ pub enum NikaAction {
     LoadMangaByName(String),
     SelectComic(Comic),
     RenderComicPage(ComicInfo),
+    SetChapters(Vec<Chapter>),
     LiftLoadingScreen,
 }
 
@@ -214,8 +215,11 @@ impl App {
                 // Loads comic info.
                 tokio::spawn(async move {
                     if let Ok(Some(info)) = helpers::get_comic_info(&comic).await {
-                        sender.send(NikaAction::RenderComicPage(info)).unwrap();
-                        sender.send(NikaAction::LiftLoadingScreen).unwrap();
+                        if let Ok(chapters) = helpers::get_chapters(&comic).await {
+                            sender.send(NikaAction::SetChapters(chapters)).unwrap();
+                            sender.send(NikaAction::LiftLoadingScreen).unwrap();
+                            sender.send(NikaAction::RenderComicPage(info)).unwrap();
+                        }
                     }
                 });
             }
@@ -226,6 +230,11 @@ impl App {
                 }
             }
             NikaAction::LiftLoadingScreen => self.state.loading = false,
+            NikaAction::SetChapters(chapters) => {
+                if let Some(comic) = &mut self.selected_comic {
+                    comic.chapters = chapters;
+                }
+            },
         }
         Ok(())
     }
@@ -280,10 +289,7 @@ impl App {
 
                     // If the user isn't editing anything, then the right action will be to load the comic view page.
                     self.action = match self.state.input_mode {
-                        InputMode::Normal => match &self.selected_comic {
-                            Some(comic) => Some(NikaAction::SelectComic(comic.clone())),
-                            None => None,
-                        },
+                        InputMode::Normal => self.selected_comic.as_ref().map(|comic| NikaAction::SelectComic(comic.to_owned())),
                         InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
                     }
                 }

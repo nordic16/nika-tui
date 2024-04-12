@@ -13,6 +13,13 @@ pub struct Comic {
     pub source: String,
     pub comic_type: ComicType,
     pub manga_info: Option<ComicInfo>,
+    pub chapters: Vec<Chapter>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Chapter {
+    pub name: String,
+    pub source: String,
 }
 
 #[derive(Debug, Clone, Default)]
