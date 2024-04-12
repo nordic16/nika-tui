@@ -12,16 +12,15 @@ impl ComicPage {
     pub fn render_page(area: Rect, frame: &mut Frame, app_state: &mut AppState, comic: &Comic) {
         let info = comic.manga_info.as_ref().unwrap();
 
-
         let main_layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![Constraint::Percentage(25), Constraint::Percentage(75)])
             .split(area);
 
         let inner_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Percentage(15), Constraint::Percentage(85)])
-        .split(main_layout[0]);
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Percentage(15), Constraint::Percentage(85)])
+            .split(main_layout[0]);
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -29,12 +28,15 @@ impl ComicPage {
             .style(Style::new().fg(Color::Green));
 
         let title = Paragraph::new(Text::from(comic.name.to_owned().bold()))
-            .centered().block(block.clone());
+            .centered()
+            .block(block.clone());
 
         let more_info = Paragraph::new(vec![
             format!("Year: {}", info.year.to_string().bold()).into(),
             format!("Genres: {}", info.genres.join(", ").bold()).into(),
-        ]).centered().block(block.clone());
+        ])
+        .centered()
+        .block(block.clone());
 
         let chap = Paragraph::new(Text::from("Chapters"))
             .bold()

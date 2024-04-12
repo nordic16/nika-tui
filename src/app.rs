@@ -17,8 +17,8 @@ use crossterm::{
 };
 use ratatui::{
     backend::CrosstermBackend,
-    style::{Style, Stylize},
-    widgets::ListState,
+    style::{Color, Style, Stylize},
+    widgets::{Block, Borders, ListState, Paragraph},
     Frame, Terminal,
 };
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -50,6 +50,7 @@ pub enum NikaAction {
     LoadMangaByName(String),
     SelectComic(Comic),
     RenderComicPage(ComicInfo),
+    LiftLoadingScreen,
 }
 
 pub struct App {
@@ -71,6 +72,8 @@ pub struct App {
 #[derive(Default, Clone)]
 pub struct AppState {
     exit: bool,
+    loading: bool,
+
     pub input_mode: InputMode,
     page: Page,
     // Should probably be an option.
@@ -206,21 +209,23 @@ impl App {
             }
             NikaAction::SelectComic(comic) => {
                 let sender = self.action_s.clone();
+                self.state.loading = true;
 
                 // Loads comic info.
                 tokio::spawn(async move {
                     if let Ok(Some(info)) = helpers::get_comic_info(&comic).await {
                         sender.send(NikaAction::RenderComicPage(info)).unwrap();
+                        sender.send(NikaAction::LiftLoadingScreen).unwrap();
                     }
                 });
-
             }
             NikaAction::RenderComicPage(info) => {
                 if let Some(comic) = &mut self.selected_comic {
                     comic.manga_info = Some(info);
                     self.state.page = Page::ViewComic(comic.to_owned());
                 }
-            },
+            }
+            NikaAction::LiftLoadingScreen => self.state.loading = false,
         }
         Ok(())
     }
@@ -259,33 +264,43 @@ impl App {
 
     /// Figures out which page is to be rendered based on self.page.
     fn render_page(&mut self, frame: &mut Frame) {
-        match self.state.page.clone() {
-            Page::Main => MainPage::render_page(frame.size(), frame),
-            Page::Search => {
-                if let Some(s) = &mut self.textarea {
-                    SearchPage::render_page(
-                        frame.size(),
-                        frame,
-                        s,
-                        &self.search_results,
-                        &mut self.state,
-                    );
-                }
+        if !self.state.loading {
+            match self.state.page.clone() {
+                Page::Main => MainPage::render_page(frame.size(), frame),
+                Page::Search => {
+                    if let Some(s) = &mut self.textarea {
+                        SearchPage::render_page(
+                            frame.size(),
+                            frame,
+                            s,
+                            &self.search_results,
+                            &mut self.state,
+                        );
+                    }
 
-                // If the user isn't editing anything, then the right action will be to load the comic view page.
-                self.action = match self.state.input_mode {
-                    InputMode::Normal => match &self.selected_comic {
-                        Some(comic) => Some(NikaAction::SelectComic(comic.clone())),
-                        None => None,
-                    },
-                    InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
+                    // If the user isn't editing anything, then the right action will be to load the comic view page.
+                    self.action = match self.state.input_mode {
+                        InputMode::Normal => match &self.selected_comic {
+                            Some(comic) => Some(NikaAction::SelectComic(comic.clone())),
+                            None => None,
+                        },
+                        InputMode::Editing => Some(NikaAction::UpdateSearchQuery),
+                    }
                 }
-            }
-            Page::Options => OptionsPage::render_page(frame.size(), frame),
-            Page::ViewComic(comic) => {
-                ComicPage::render_page(frame.size(), frame, &mut self.state, &comic)
-            }
-        };
+                Page::Options => OptionsPage::render_page(frame.size(), frame),
+                Page::ViewComic(comic) => {
+                    ComicPage::render_page(frame.size(), frame, &mut self.state, &comic)
+                }
+            };
+        } else {
+            let block = Block::default()
+                .borders(Borders::ALL)
+                .style(Style::new().fg(Color::Red));
+
+            let paragraph = Paragraph::new("Loading...").centered().bold().block(block);
+
+            frame.render_widget(paragraph, frame.size())
+        }
     }
 
     fn send_action(&self, message: NikaMessage) -> Result<(), SendError<NikaAction>> {
