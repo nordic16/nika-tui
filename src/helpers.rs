@@ -1,3 +1,4 @@
+use ratatui::{layout::Direction, widgets::ListDirection};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
 use crate::{
@@ -109,14 +110,25 @@ pub async fn get_chapters(comic: &Comic) -> reqwest::Result<Vec<Chapter>> {
     Ok(chapters)
 }
 
-pub fn get_selection_index_below(val: Option<usize>, len: usize) -> usize {
+pub fn get_selection_index(val: Option<usize>, len: usize, direction: ListDirection) -> usize {
     match val {
         Some(i) => {
-            if i == len - 1 {
-                // Prevent user from selecting elements below the list
-                i
-            } else {
-                i + 1
+            match direction {
+                ListDirection::TopToBottom => {
+                    if i == len - 1 {
+                        // Prevent user from selecting elements below the list
+                        i
+                    } else {
+                        i + 1
+                    }
+                },
+                ListDirection::BottomToTop => {
+                    if i > 0 {
+                        i - 1
+                    } else {
+                        i
+                    }
+                }
             }
         }
         None => 0,

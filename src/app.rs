@@ -1,6 +1,6 @@
 use crate::{
     event_handler::{EventHandler, NikaMessage},
-    helpers::{self, get_selection_index_below, search_manga},
+    helpers::{self, get_selection_index, search_manga},
     models::comic::{Chapter, Comic, ComicInfo},
     ui::{
         comic_page::ComicPage, main_page::MainPage, options_page::OptionsPage,
@@ -18,7 +18,7 @@ use crossterm::{
 use ratatui::{
     backend::CrosstermBackend,
     style::{Color, Style, Stylize},
-    widgets::{Block, Borders, ListState, Paragraph},
+    widgets::{Block, Borders, ListDirection, ListState, Paragraph},
     Frame, Terminal,
 };
 use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -138,9 +138,10 @@ impl App {
                     }
 
                     KeyCode::Down | KeyCode::Left => {
-                        let index = get_selection_index_below(
+                        let index = get_selection_index(
                             self.state.list_state.selected(),
                             self.search_results.len(),
+                            ListDirection::TopToBottom
                         );
 
                         self.selected_comic = Some(self.search_results[index].clone());
@@ -148,17 +149,11 @@ impl App {
                     }
 
                     KeyCode::Up | KeyCode::Right => {
-                        let index = match self.state.list_state.selected() {
-                            Some(i) => {
-                                // There's no element -1, duhhh
-                                if i > 0 {
-                                    i - 1
-                                } else {
-                                    i
-                                }
-                            }
-                            None => 1,
-                        };
+                        let index = get_selection_index(
+                            self.state.list_state.selected(),
+                            self.search_results.len(),
+                            ListDirection::BottomToTop
+                        );
 
                         self.selected_comic = Some(self.search_results[index].clone());
                         self.state.list_state.select(Some(index));
