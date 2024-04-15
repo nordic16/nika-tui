@@ -1,14 +1,18 @@
+use std::time::Duration;
+
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
     prelude::*,
     widgets::{block::*, Borders, List, ListDirection, ListItem, ListState},
 };
 
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::sleep};
 use tui_textarea::TextArea;
 
 use crate::{
-    app::{AppState, InputMode, NikaAction, Page}, helpers, models::comic::Comic
+    app::{InputMode, NikaAction, Page},
+    helpers,
+    models::comic::Comic,
 };
 
 use super::Component;
@@ -22,15 +26,19 @@ pub struct SearchPage {
     list_state: ListState,
 }
 
-
 impl Component for SearchPage {
-    fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::app::NikaAction>) -> std::io::Result<()> {
+    fn register_action_handler(
+        &mut self,
+        tx: tokio::sync::mpsc::UnboundedSender<crate::app::NikaAction>,
+    ) -> std::io::Result<()> {
         self.action_tx = Some(tx);
         Ok(())
-
     }
 
-    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) -> std::io::Result<Option<crate::app::NikaAction>> {
+    fn handle_key_events(
+        &mut self,
+        key: crossterm::event::KeyEvent,
+    ) -> std::io::Result<Option<crate::app::NikaAction>> {
         match self.mode {
             InputMode::Normal => {
                 match key.code {
@@ -39,52 +47,63 @@ impl Component for SearchPage {
                     KeyCode::Char('e') => {
                         self.mode = InputMode::Editing;
                         self.list_state.select(None);
-                        Ok(None)   
-                    },
+                        Ok(None)
+                    }
 
                     KeyCode::Up => {
-                        let index = helpers::get_selection_index(self.list_state.selected(), 
-                            self.search_results.len(), ListDirection::BottomToTop);
+                        let index = helpers::get_selection_index(
+                            self.list_state.selected(),
+                            self.search_results.len(),
+                            ListDirection::BottomToTop,
+                        );
 
                         self.list_state.select(Some(index));
 
                         Ok(None) // temporary
-                    },
+                    }
 
                     KeyCode::Down => {
-                        let index = helpers::get_selection_index(self.list_state.selected(), 
-                            self.search_results.len(), ListDirection::TopToBottom);
+                        let index = helpers::get_selection_index(
+                            self.list_state.selected(),
+                            self.search_results.len(),
+                            ListDirection::TopToBottom,
+                        );
 
                         self.list_state.select(Some(index));
 
                         Ok(None) // temporary
                     },
 
-                    _ => Ok(None)
+                    KeyCode::Enter => {
+                        let comic = &self.search_results[self.list_state.selected().unwrap()];
+                        
+                        Ok(Some(NikaAction::SelectComic(comic.to_owned())))
+                    }
+
+                    _ => Ok(None),
                 }
-            },
+            }
             InputMode::Editing => {
                 if let KeyEventKind::Press = key.kind {
                     match key.code {
                         KeyCode::Esc => {
                             self.mode = InputMode::Normal;
-                            self.list_state.select(Some(0));                            
+                            self.list_state.select(Some(0));
                             return Ok(None);
                         }
 
-                        KeyCode::Enter => {}, // No newline lil bro
+                        KeyCode::Enter => {} // No newline lil bro
 
                         _ => {
                             self.text_area.input(key);
                             let query = &self.text_area.lines()[0];
 
-                            return Ok(Some(NikaAction::SearchComic(query.to_owned())))
+                            return Ok(Some(NikaAction::SearchComic(query.to_owned())));
                         }
                     }
                 }
-
                 Ok(None)
-            },
+            }
         }
     }
 
@@ -97,18 +116,33 @@ impl Component for SearchPage {
 
                     let message = match results {
                         Ok(val) => NikaAction::SetSearchResults(val),
-                        Err(e) => NikaAction::Error,
+                        Err(_) => NikaAction::Error,
                     };
-
                     sender.send(message).unwrap();
                 });
-
-                
             }
 
             NikaAction::SetSearchResults(r) => self.search_results = r,
+            
+            NikaAction::SelectComic(mut c) => {
+                let sender = self.action_tx.as_ref().unwrap().to_owned();
+                sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
-            _ => {},
+                tokio::spawn(async move {
+                    sender.send(NikaAction::ShowLoadingScreen).unwrap();
+
+                    let chapters = helpers::get_chapters(&c).await.unwrap();
+                    let info = helpers::get_comic_info(&c).await.unwrap();
+
+                    c.manga_info = info;
+                    c.chapters = chapters;
+
+                    sender.send(NikaAction::LiftLoadingScreen).unwrap();
+                    sender.send(NikaAction::ChangePage(Page::ViewComic(c))).unwrap();
+
+                });
+            }
+            _ => {}
         }
     }
 
@@ -123,7 +157,6 @@ impl Component for SearchPage {
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
             .split(rect);
-        
 
         let block1 = Block::default()
             .borders(Borders::ALL)
@@ -141,7 +174,8 @@ impl Component for SearchPage {
             .title("Results")
             .title_alignment(Alignment::Center);
 
-        let items = self.search_results
+        let items = self
+            .search_results
             .iter()
             .map(|f| ListItem::new(f.name.as_str()))
             .collect::<Vec<ListItem>>();
@@ -151,61 +185,6 @@ impl Component for SearchPage {
             .highlight_style(Style::new().fg(Color::Yellow));
 
         f.render_widget(self.text_area.widget(), layout[0]);
-        f.render_stateful_widget(results, layout[1], &mut self.list_state);    
-    }
-}
-
-
-impl SearchPage {
-    pub fn render_page(
-        area: Rect,
-        frame: &mut Frame,
-        input: &mut TextArea,
-        results: &[Comic],
-        app_state: &mut AppState,
-    ) {
-        // decides the right color for the results and text bar
-        
-        /* 
-        let (scolor, rcolor) = match app_state.input_mode {
-            InputMode::Normal => (Color::default(), Color::Yellow),
-            InputMode::Editing => (Color::Yellow, Color::default()),
-        };
-
-        let layout = Layout::default()
-            .spacing(2)
-            .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
-            .split(area);
-        
-
-        let block1 = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::new().fg(scolor))
-            .border_type(BorderType::Rounded)
-            .title("Search")
-            .title_alignment(Alignment::Center);
-
-        input.set_block(block1);
-
-        let block2 = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::new().fg(rcolor))
-            .border_type(BorderType::Rounded)
-            .title("Results")
-            .title_alignment(Alignment::Center);
-
-        let items = results
-            .iter()
-            .map(|f| ListItem::new(f.name.as_str()))
-            .collect::<Vec<ListItem>>();
-
-        let results = List::new(items)
-            .block(block2)
-            .highlight_style(Style::new().fg(Color::Yellow));
-
-        frame.render_widget(input.widget(), layout[0]);
-        frame.render_stateful_widget(results, layout[1], &mut app_state.list_state);
-        */
+        f.render_stateful_widget(results, layout[1], &mut self.list_state);
     }
 }

@@ -1,4 +1,4 @@
-use ratatui::{layout::Direction, widgets::ListDirection};
+use ratatui::widgets::ListDirection;
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
 use crate::{

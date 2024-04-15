@@ -1,21 +1,17 @@
-use std::{io::{self, stdout}, panic::{set_hook, take_hook}};
+use std::{
+    io::{self, stdout},
+    panic::{set_hook, take_hook},
+};
 
 use crossterm::{
     cursor,
-    event::{Event, EventStream, KeyEvent, KeyEventKind, MouseEvent},
+    event::{Event, EventStream, KeyEvent, KeyEventKind},
     execute,
-    terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{FutureExt, StreamExt};
-use ratatui::{
-    backend::{Backend, CrosstermBackend},
-    symbols::border::THICK,
-    Terminal,
-};
-use tokio::{
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    task::JoinHandle,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 #[derive(Clone)]
 pub enum NikaEvent {
@@ -52,7 +48,6 @@ impl Tui {
             framerate,
         })
     }
-
 
     // Panics properly.
     pub fn init_panic_hook(&self) {
