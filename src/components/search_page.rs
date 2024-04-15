@@ -38,6 +38,7 @@ impl Component for SearchPage {
                     KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
                     KeyCode::Char('e') => {
                         self.mode = InputMode::Editing;
+                        self.list_state.select(None);
                         Ok(None)   
                     },
 
@@ -67,6 +68,7 @@ impl Component for SearchPage {
                     match key.code {
                         KeyCode::Esc => {
                             self.mode = InputMode::Normal;
+                            self.list_state.select(Some(0));                            
                             return Ok(None);
                         }
 
@@ -75,8 +77,6 @@ impl Component for SearchPage {
                         _ => {
                             self.text_area.input(key);
                             let query = &self.text_area.lines()[0];
-
-
 
                             return Ok(Some(NikaAction::SearchComic(query.to_owned())))
                         }
@@ -122,7 +122,7 @@ impl Component for SearchPage {
             .spacing(2)
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
-            .split(f.size());
+            .split(rect);
         
 
         let block1 = Block::default()
@@ -151,7 +151,8 @@ impl Component for SearchPage {
             .highlight_style(Style::new().fg(Color::Yellow));
 
         f.render_widget(self.text_area.widget(), layout[0]);
-        f.render_stateful_widget(results, layout[1], &mut self.list_state);    }
+        f.render_stateful_widget(results, layout[1], &mut self.list_state);    
+    }
 }
 
 
