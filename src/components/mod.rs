@@ -32,7 +32,7 @@ pub trait Component {
     fn handle_key_events(&mut self, key: KeyEvent) -> io::Result<Option<NikaAction>>;
 
     #[allow(unused_variables)]
-    fn update(&mut self, action: NikaAction) -> io::Result<Option<NikaAction>>;
+    fn update(&mut self, action: NikaAction);
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect);
 }

@@ -1,30 +1,15 @@
 use crate::{
     components::{
-        comic_page::ComicPage, main_page::HomePage, options_page::OptionsPage,
-        search_page::SearchPage, Component,
+        main_page::HomePage, search_page::SearchPage, Component
     },
-    helpers::{self, get_selection_index, search_manga},
-    models::comic::{Chapter, Comic, ComicInfo},
-    tui::{NikaEvent, Tui},
+    models::comic::Comic,
+    tui::Tui,
 };
 use std::io;
 
-use crossterm::{
-    cursor,
-    event::{KeyCode, KeyEvent},
-    execute,
-    terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use ratatui::{
-    backend::CrosstermBackend,
-    style::{Color, Style, Stylize},
-    text::Text,
-    widgets::{Block, Borders, ListDirection, ListState, Paragraph},
-    Frame, Terminal,
-};
-use reqwest::redirect::Action;
-use tokio::sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tui_textarea::TextArea;
+use crossterm::event::KeyEvent;
+
+use tokio::sync::mpsc::unbounded_channel;
 
 #[derive(Debug, Default, Clone)]
 pub enum Page {
@@ -48,6 +33,9 @@ pub enum NikaAction {
     Key(KeyEvent),
     Quit,
     Render,
+    ChangePage(Page),
+    SearchComic(String),
+    SetSearchResults(Vec<Comic>)
 }
 
 pub struct App {
@@ -59,11 +47,7 @@ pub struct App {
 pub struct AppState {
     exit: bool,
     loading: bool,
-
-    pub input_mode: InputMode,
     page: Page,
-    // Should probably be an option.
-    pub list_state: ListState,
 }
 
 impl Default for App {
@@ -79,9 +63,9 @@ impl App {
     /// runs the application main loop until the user quits
     pub async fn run(&mut self) -> io::Result<()> {
         let mut tui = Tui::new()?;
-
+        tui.init_panic_hook();
+        
         let (tx, mut rx) = unbounded_channel::<NikaAction>();
-
         self.component.register_action_handler(tx.clone())?;
 
         tui.run()?;
@@ -91,7 +75,17 @@ impl App {
 
             if let Some(e) = event {
                 // If there was an event in a given component.
-                if let Ok(Some(action)) = self.component.handle_events(Some(e)) {
+                if let Ok(Some(action)) = self.component.handle_events(Some(e)) {             
+                    // ChangePage should be handled in the main loop.
+                    if let NikaAction::ChangePage(page) = action {
+                        let page = self.get_page(page);
+                        self.component = page;
+
+                        // Needs to be registered again after assigning a new component.
+                        self.component.register_action_handler(tx.clone())?;
+                        continue;
+                    }
+                    
                     tx.send(action).unwrap();
                 }
             }
@@ -104,7 +98,7 @@ impl App {
                         tui.terminal.draw(|f| self.component.draw(f, f.size()))?;
                     }
                     _ => {
-                        self.component.update(act)?;
+                        self.component.update(act);
                     }
                 }
             }
@@ -115,5 +109,15 @@ impl App {
         }
 
         Ok(())
+    }
+
+
+    fn get_page(&self, page: Page) -> Box<dyn Component> {
+        match page {
+            Page::Main => Box::new(HomePage::default()),
+            Page::Search => Box::new(SearchPage::default()),
+            Page::Options => todo!(),
+            Page::ViewComic(_) => todo!(),
+        }    
     }
 }

@@ -1,4 +1,4 @@
-use std::io::{self, stdout};
+use std::{io::{self, stdout}, panic::{set_hook, take_hook}};
 
 use crossterm::{
     cursor,
@@ -53,6 +53,17 @@ impl Tui {
         })
     }
 
+
+    // Panics properly.
+    pub fn init_panic_hook(&self) {
+        let original_hook = take_hook();
+        set_hook(Box::new(move |panic_info| {
+            // intentionally ignore errors here since we're already in a panic
+            let _ = Self::restore();
+            original_hook(panic_info);
+        }));
+    }
+
     pub fn run(&mut self) -> io::Result<()> {
         let render_delay = std::time::Duration::from_secs_f64(1.0 / 60.0);
         let _tx = self.event_tx.clone();
@@ -105,7 +116,7 @@ impl Tui {
     }
 
     /// Restore the terminal to its original state
-    pub fn restore(&mut self) -> io::Result<()> {
+    pub fn restore() -> io::Result<()> {
         execute!(stdout(), LeaveAlternateScreen)?;
         terminal::disable_raw_mode()?;
 
@@ -115,6 +126,6 @@ impl Tui {
 
 impl Drop for Tui {
     fn drop(&mut self) {
-        self.restore().unwrap();
+        Self::restore().unwrap();
     }
 }

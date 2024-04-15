@@ -48,6 +48,6 @@ impl ComicPage {
 
         frame.render_widget(title, inner_layout[0]);
         frame.render_widget(more_info, inner_layout[1]);
-        frame.render_stateful_widget(list, main_layout[1], &mut app_state.list_state);
+        // frame.render_stateful_widget(list, main_layout[1], &mut app_state.list_state);
     }
 }
