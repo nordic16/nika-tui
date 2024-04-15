@@ -1,24 +1,33 @@
 use std::io::{self, stdout};
 
-use crossterm::{cursor, event::{Event, EventStream, KeyEvent, KeyEventKind, MouseEvent}, execute, terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
+use crossterm::{
+    cursor,
+    event::{Event, EventStream, KeyEvent, KeyEventKind, MouseEvent},
+    execute,
+    terminal::{self, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 use futures::{FutureExt, StreamExt};
-use ratatui::{backend::{Backend, CrosstermBackend}, symbols::border::THICK, Terminal};
-use tokio::{sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender}, task::JoinHandle};
+use ratatui::{
+    backend::{Backend, CrosstermBackend},
+    symbols::border::THICK,
+    Terminal,
+};
+use tokio::{
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    task::JoinHandle,
+};
 
 #[derive(Clone)]
 pub enum NikaEvent {
-Init,
-  Quit,
-  Error,
-  Closed,
-  Tick,
-  Render,
-  FocusGained,
-  FocusLost,
-  Paste(String),
-  Key(KeyEvent),
-  Mouse(MouseEvent),
-  Resize(u16, u16),
+    Quit,
+    Error,
+    Closed,
+    Render,
+    FocusGained,
+    FocusLost,
+    Paste(String),
+    Key(KeyEvent),
+    Resize(u16, u16),
 }
 
 #[derive(Debug)]
@@ -32,10 +41,16 @@ pub struct Tui {
 impl Tui {
     pub fn new() -> io::Result<Self> {
         let framerate = 60.0;
+
         let (event_tx, event_rx) = unbounded_channel::<NikaEvent>();
         let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-        Ok(Self { terminal, event_rx, event_tx, framerate })
+        Ok(Self {
+            terminal,
+            event_rx,
+            event_tx,
+            framerate,
+        })
     }
 
     pub fn run(&mut self) -> io::Result<()> {

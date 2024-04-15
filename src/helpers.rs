@@ -121,7 +121,7 @@ pub fn get_selection_index(val: Option<usize>, len: usize, direction: ListDirect
                     } else {
                         i + 1
                     }
-                },
+                }
                 ListDirection::BottomToTop => {
                     if i > 0 {
                         i - 1
