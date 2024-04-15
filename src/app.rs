@@ -97,13 +97,13 @@ impl App {
 
                             tui.terminal.draw(|f| f.render_widget(widget, f.size()))?;
                         }
-                    },
+                    }
                     NikaAction::ChangePage(page) => {
                         let page = self.get_component(page);
                         self.component = page;
-    
+
                         // Needs to be registered again after assigning a new component.
-                         self.component.register_action_handler(tx.clone())?;
+                        self.component.register_action_handler(tx.clone())?;
                     }
                     _ => {
                         self.component.update(act);
@@ -130,11 +130,11 @@ impl App {
 
     fn get_loading_screen(&self) -> Paragraph<'static> {
         let block = Block::default()
-            .border_style(Style::new().on_light_blue())
+            .border_style(Style::new().light_blue())
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
 
-        Paragraph::new(Text::from("Loading"))
+        Paragraph::new(Text::from("Loading..."))
             .centered()
             .bold()
             .block(block)

@@ -1,4 +1,7 @@
-use crate::{app::{NikaAction, Page}, models::comic::Comic};
+use crate::{
+    app::{NikaAction, Page},
+    models::comic::Comic,
+};
 
 use crossterm::event::KeyCode;
 use ratatui::{
@@ -18,7 +21,11 @@ pub struct ComicPage {
 
 impl ComicPage {
     pub fn new(comic: Comic) -> Self {
-        Self { action_tx: None, comic, list_state: ListState::default() }
+        Self {
+            action_tx: None,
+            comic,
+            list_state: ListState::default(),
+        }
     }
 }
 
@@ -29,18 +36,19 @@ impl Component for ComicPage {
         Ok(())
     }
 
-    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) -> std::io::Result<Option<NikaAction>> {
+    fn handle_key_events(
+        &mut self,
+        key: crossterm::event::KeyEvent,
+    ) -> std::io::Result<Option<NikaAction>> {
         match key.code {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
             KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Main))),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
 
-    fn update(&mut self, action: NikaAction) {
-
-    }
+    fn update(&mut self, action: NikaAction) {}
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {
         let info = self.comic.manga_info.as_ref().unwrap();
@@ -71,7 +79,8 @@ impl Component for ComicPage {
         .centered()
         .block(block.clone());
 
-        let list = self.comic
+        let list = self
+            .comic
             .chapters
             .iter()
             .map(|f| Text::from(f.name.as_str()))

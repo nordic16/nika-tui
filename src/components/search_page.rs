@@ -1,12 +1,10 @@
-use std::time::Duration;
-
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
     prelude::*,
     widgets::{block::*, Borders, List, ListDirection, ListItem, ListState},
 };
 
-use tokio::{sync::mpsc::UnboundedSender, time::sleep};
+use tokio::sync::mpsc::UnboundedSender;
 use tui_textarea::TextArea;
 
 use crate::{
@@ -72,11 +70,11 @@ impl Component for SearchPage {
                         self.list_state.select(Some(index));
 
                         Ok(None) // temporary
-                    },
+                    }
 
                     KeyCode::Enter => {
                         let comic = &self.search_results[self.list_state.selected().unwrap()];
-                        
+
                         Ok(Some(NikaAction::SelectComic(comic.to_owned())))
                     }
 
@@ -123,7 +121,7 @@ impl Component for SearchPage {
             }
 
             NikaAction::SetSearchResults(r) => self.search_results = r,
-            
+
             NikaAction::SelectComic(mut c) => {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
                 sender.send(NikaAction::ShowLoadingScreen).unwrap();
@@ -138,8 +136,9 @@ impl Component for SearchPage {
                     c.chapters = chapters;
 
                     sender.send(NikaAction::LiftLoadingScreen).unwrap();
-                    sender.send(NikaAction::ChangePage(Page::ViewComic(c))).unwrap();
-
+                    sender
+                        .send(NikaAction::ChangePage(Page::ViewComic(c)))
+                        .unwrap();
                 });
             }
             _ => {}
@@ -153,7 +152,6 @@ impl Component for SearchPage {
         };
 
         let layout = Layout::default()
-            .spacing(2)
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
             .split(rect);
