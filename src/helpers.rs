@@ -110,7 +110,7 @@ pub async fn get_chapters(comic: &Comic) -> reqwest::Result<Vec<Chapter>> {
     Ok(chapters)
 }
 
-pub fn get_selection_index(val: Option<usize>, len: usize, direction: ListDirection) -> usize {
+pub fn get_new_selection_index(val: Option<usize>, len: usize, direction: ListDirection) -> usize {
     match val {
         Some(i) => {
             match direction {

@@ -1,13 +1,12 @@
 use crate::{
-    app::{NikaAction, Page},
-    models::comic::Comic,
+    app::{NikaAction, Page}, helpers, models::comic::{Chapter, Comic}
 };
 
 use crossterm::event::KeyCode;
 use ratatui::{
     prelude::*,
     symbols::border,
-    widgets::{block::*, Borders, List, ListState, Paragraph},
+    widgets::{block::*, Borders, List, ListDirection, ListState, Paragraph},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -17,14 +16,22 @@ pub struct ComicPage {
     action_tx: Option<UnboundedSender<NikaAction>>,
     comic: Comic,
     list_state: ListState,
+    last_fetched: i32,
+    shown_chapters: Vec<Chapter>
 }
 
 impl ComicPage {
     pub fn new(comic: Comic) -> Self {
+
+        let c = comic.clone();
+        let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
+         
         Self {
             action_tx: None,
             comic,
             list_state: ListState::default(),
+            last_fetched: 25,
+            shown_chapters: chapters,
         }
     }
 }
@@ -44,11 +51,56 @@ impl Component for ComicPage {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
             KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Main))),
+
+            KeyCode::Up => {
+                let index = helpers::get_new_selection_index(self.list_state.selected(), 25, ListDirection::BottomToTop);
+                self.list_state.select(Some(index));
+                Ok(None)
+            },
+
+            KeyCode::Down => {
+                let index = helpers::get_new_selection_index(self.list_state.selected(), 25, ListDirection::TopToBottom);
+                self.list_state.select(Some(index));
+                Ok(None)
+            }
+
+            KeyCode::Right => {
+                Ok(Some(NikaAction::FetchNewChapters(true)))
+                
+            }
+
+            KeyCode::Left => {
+                Ok(Some(NikaAction::FetchNewChapters(false)))
+            }
+
             _ => Ok(None),
         }
     }
 
-    fn update(&mut self, action: NikaAction) {}
+    fn update(&mut self, action: NikaAction) {
+        match action {
+            NikaAction::FetchNewChapters(a) => {
+                let amount = match a {
+                    true => 25,
+                    false => -25,
+                };
+
+                self.list_state.select(Some(0));
+
+                let skip_chapters = self.last_fetched + amount;
+                self.last_fetched += amount; // Updates the latest chapter fetched lol
+
+                let tmp = self.comic.chapters.clone();
+                let chapters = tmp.into_iter().skip(skip_chapters as usize).collect::<Vec<Chapter>>();
+                self.shown_chapters = chapters;
+                
+            },
+
+            NikaAction::SetChapters(chapters) => self.comic.chapters = chapters,
+            
+            _ => {}
+        }
+    }
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {
         let info = self.comic.manga_info.as_ref().unwrap();
@@ -80,12 +132,12 @@ impl Component for ComicPage {
         .block(block.clone());
 
         let list = self
-            .comic
-            .chapters
+            .shown_chapters
             .iter()
             .map(|f| Text::from(f.name.as_str()))
             .collect::<List>()
             .block(block)
+            .style(Style::new().fg(Color::White))
             .highlight_style(Style::new().fg(Color::LightGreen));
 
         f.render_widget(title, inner_layout[0]);

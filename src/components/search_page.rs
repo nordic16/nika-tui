@@ -49,7 +49,7 @@ impl Component for SearchPage {
                     }
 
                     KeyCode::Up => {
-                        let index = helpers::get_selection_index(
+                        let index = helpers::get_new_selection_index(
                             self.list_state.selected(),
                             self.search_results.len(),
                             ListDirection::BottomToTop,
@@ -61,7 +61,7 @@ impl Component for SearchPage {
                     }
 
                     KeyCode::Down => {
-                        let index = helpers::get_selection_index(
+                        let index = helpers::get_new_selection_index(
                             self.list_state.selected(),
                             self.search_results.len(),
                             ListDirection::TopToBottom,

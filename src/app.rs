@@ -1,6 +1,6 @@
 use crate::{
     components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component},
-    models::comic::Comic,
+    models::comic::{Chapter, Comic},
     tui::Tui,
 };
 use std::io;
@@ -8,9 +8,7 @@ use std::io;
 use crossterm::event::KeyEvent;
 
 use ratatui::{
-    style::{Style, Stylize},
-    text::Text,
-    widgets::{Block, BorderType, Borders, Paragraph},
+    style::{Style, Stylize}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}
 };
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -42,6 +40,8 @@ pub enum NikaAction {
     ShowLoadingScreen,
     LiftLoadingScreen,
     SelectComic(Comic),
+    FetchNewChapters(bool), // true if right, false if left.
+    SetChapters(Vec<Chapter>),
 }
 
 pub struct App {
