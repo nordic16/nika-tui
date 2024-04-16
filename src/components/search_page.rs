@@ -40,7 +40,7 @@ impl Component for SearchPage {
         match self.mode {
             InputMode::Normal => {
                 match key.code {
-                    KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Main))),
+                    KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Home))),
                     KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
                     KeyCode::Char('e') => {
                         self.mode = InputMode::Editing;
@@ -136,9 +136,7 @@ impl Component for SearchPage {
                     c.chapters = chapters;
 
                     sender.send(NikaAction::LiftLoadingScreen).unwrap();
-                    sender
-                        .send(NikaAction::ChangePage(Page::ViewComic(c)))
-                        .unwrap();
+                    sender.send(NikaAction::ChangePage(Page::Comic(c))).unwrap();
                 });
             }
             _ => {}

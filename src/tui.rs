@@ -85,7 +85,7 @@ impl Tui {
                                 }
                             }
                             Some(Err(e)) => {
-                                _tx.send(NikaEvent::Error).expect(format!("Error! {}", e).as_str());
+                                _tx.send(NikaEvent::Error).unwrap_or_else(|_| panic!("Error! {}", e));
                             }
                             None => {},
                         }

@@ -1,5 +1,7 @@
 use crate::{
-    app::{NikaAction, Page}, helpers, models::comic::{Chapter, Comic}
+    app::{NikaAction, Page},
+    helpers,
+    models::comic::{Chapter, Comic},
 };
 
 use crossterm::event::KeyCode;
@@ -17,15 +19,14 @@ pub struct ComicPage {
     comic: Comic,
     list_state: ListState,
     last_fetched: i32,
-    shown_chapters: Vec<Chapter>
+    shown_chapters: Vec<Chapter>,
 }
 
 impl ComicPage {
     pub fn new(comic: Comic) -> Self {
-
         let c = comic.clone();
         let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
-         
+
         Self {
             action_tx: None,
             comic,
@@ -50,28 +51,31 @@ impl Component for ComicPage {
         match key.code {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
-            KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Main))),
+            KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Home))),
 
             KeyCode::Up => {
-                let index = helpers::get_new_selection_index(self.list_state.selected(), 25, ListDirection::BottomToTop);
+                let index = helpers::get_new_selection_index(
+                    self.list_state.selected(),
+                    25,
+                    ListDirection::BottomToTop,
+                );
                 self.list_state.select(Some(index));
                 Ok(None)
-            },
+            }
 
             KeyCode::Down => {
-                let index = helpers::get_new_selection_index(self.list_state.selected(), 25, ListDirection::TopToBottom);
+                let index = helpers::get_new_selection_index(
+                    self.list_state.selected(),
+                    25,
+                    ListDirection::TopToBottom,
+                );
                 self.list_state.select(Some(index));
                 Ok(None)
             }
 
-            KeyCode::Right => {
-                Ok(Some(NikaAction::FetchNewChapters(true)))
-                
-            }
+            KeyCode::Right => Ok(Some(NikaAction::FetchNewChapters(true))),
 
-            KeyCode::Left => {
-                Ok(Some(NikaAction::FetchNewChapters(false)))
-            }
+            KeyCode::Left => Ok(Some(NikaAction::FetchNewChapters(false))),
 
             _ => Ok(None),
         }
@@ -91,13 +95,15 @@ impl Component for ComicPage {
                 self.last_fetched += amount; // Updates the latest chapter fetched lol
 
                 let tmp = self.comic.chapters.clone();
-                let chapters = tmp.into_iter().skip(skip_chapters as usize).collect::<Vec<Chapter>>();
+                let chapters = tmp
+                    .into_iter()
+                    .skip(skip_chapters as usize)
+                    .collect::<Vec<Chapter>>();
                 self.shown_chapters = chapters;
-                
-            },
+            }
 
             NikaAction::SetChapters(chapters) => self.comic.chapters = chapters,
-            
+
             _ => {}
         }
     }

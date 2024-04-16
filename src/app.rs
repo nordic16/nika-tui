@@ -8,17 +8,19 @@ use std::io;
 use crossterm::event::KeyEvent;
 
 use ratatui::{
-    style::{Style, Stylize}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}
+    style::{Style, Stylize},
+    text::Text,
+    widgets::{Block, BorderType, Borders, Paragraph},
 };
 use tokio::sync::mpsc::unbounded_channel;
 
 #[derive(Debug, Default, Clone)]
 pub enum Page {
     #[default]
-    Main,
+    Home,
     Search,
     Options,
-    ViewComic(Comic),
+    Comic(Comic),
 }
 
 #[derive(Default, Clone)]
@@ -121,10 +123,10 @@ impl App {
 
     fn get_component(&self, page: Page) -> Box<dyn Component> {
         match page {
-            Page::Main => Box::new(HomePage::default()),
-            Page::Search => Box::new(SearchPage::default()),
+            Page::Home => Box::<HomePage>::default(),
+            Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
-            Page::ViewComic(c) => Box::new(ComicPage::new(c)),
+            Page::Comic(c) => Box::new(ComicPage::new(c)),
         }
     }
 
