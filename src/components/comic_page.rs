@@ -89,17 +89,25 @@ impl Component for ComicPage {
                     false => -25,
                 };
 
-                self.list_state.select(Some(0));
-
                 let skip_chapters = self.last_fetched + amount;
-                self.last_fetched += amount; // Updates the latest chapter fetched lol
 
                 let tmp = self.comic.chapters.clone();
                 let chapters = tmp
                     .into_iter()
                     .skip(skip_chapters as usize)
                     .collect::<Vec<Chapter>>();
+
+                if chapters.is_empty() {
+                    return;
+                }
+
                 self.shown_chapters = chapters;
+
+                self.last_fetched += amount; // Updates the latest chapter fetched lol
+
+                self.list_state.select(Some(0));
+
+
             }
 
             NikaAction::SetChapters(chapters) => self.comic.chapters = chapters,
