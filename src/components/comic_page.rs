@@ -146,7 +146,7 @@ impl Component for ComicPage {
             .border_set(border::ROUNDED)
             .style(Style::new().fg(Color::Green))
             .title_alignment(Alignment::Center);
-
+        
         let paragraph = Paragraph::new(Text::from(self.comic.name.to_owned().bold()))
             .centered()
             .block(block.clone());
@@ -159,13 +159,14 @@ impl Component for ComicPage {
         .block(block.clone());
 
         let total_pages = (self.comic.chapters.len() as f32 / 25_f32).ceil();
-        let tmp = format!("Page {} of {}", self.page_number, total_pages);
+        let tmp = format!("Chapters (Page {} of {})", self.page_number, total_pages);
+
         let list = self
             .shown_chapters
             .iter()
             .map(|f| Text::from(f.name.as_str()))
             .collect::<List>()
-            .block(block.title("Chapters").title_bottom(tmp))
+            .block(block.title(tmp).title_bottom("◀ previous, ▲ up, ▼ down, ▶ next"))
             .style(Style::new().fg(Color::White))
             .highlight_style(Style::new().fg(Color::LightGreen));
 

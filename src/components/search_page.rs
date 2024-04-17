@@ -172,7 +172,8 @@ impl Component for SearchPage {
             .border_style(Style::new().fg(rcolor))
             .border_type(BorderType::Rounded)
             .title("Results")
-            .title_alignment(Alignment::Center);
+            .title_alignment(Alignment::Center)
+            .title_bottom("<e> to edit and <Esc> to stop editing");
 
         let items = self
             .search_results
