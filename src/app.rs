@@ -55,7 +55,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            component: Box::new(HomePage::default()),
+            component: Box::<HomePage>::default(),
             quit: false,
             loading: false,
         }

@@ -18,8 +18,8 @@ pub struct ComicPage {
     action_tx: Option<UnboundedSender<NikaAction>>,
     comic: Comic,
     list_state: ListState,
-    last_fetched: i32,
     shown_chapters: Vec<Chapter>,
+    page_number: u16,
 }
 
 impl ComicPage {
@@ -30,9 +30,9 @@ impl ComicPage {
         Self {
             action_tx: None,
             comic,
-            list_state: ListState::default(),
-            last_fetched: 25,
+            list_state: ListState::default().with_selected(Some(0)),
             shown_chapters: chapters,
+            page_number: 1,
         }
     }
 }
@@ -54,27 +54,30 @@ impl Component for ComicPage {
             KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Home))),
 
             KeyCode::Up => {
-                let index = helpers::get_new_selection_index(
-                    self.list_state.selected(),
-                    25,
-                    ListDirection::BottomToTop,
-                );
+                let selected = self.list_state.selected().unwrap_or_default();
+
+                let index =
+                    helpers::get_new_selection_index(selected, 25, ListDirection::BottomToTop);
                 self.list_state.select(Some(index));
+
                 Ok(None)
             }
 
             KeyCode::Down => {
+                let selected = self.list_state.selected().unwrap_or_default();
+
                 let index = helpers::get_new_selection_index(
-                    self.list_state.selected(),
-                    25,
+                    selected,
+                    self.shown_chapters.len(),
                     ListDirection::TopToBottom,
                 );
+
                 self.list_state.select(Some(index));
+
                 Ok(None)
             }
 
             KeyCode::Right => Ok(Some(NikaAction::FetchNewChapters(true))),
-
             KeyCode::Left => Ok(Some(NikaAction::FetchNewChapters(false))),
 
             _ => Ok(None),
@@ -84,17 +87,30 @@ impl Component for ComicPage {
     fn update(&mut self, action: NikaAction) {
         match action {
             NikaAction::FetchNewChapters(a) => {
-                let amount = match a {
-                    true => 25,
-                    false => -25,
-                };
+                let final_page = (self.comic.chapters.len() as f32 / 25_f32).ceil() as u16;
 
-                let skip_chapters = self.last_fetched + amount;
+                let new_page_number = match a {
+                    true => {
+                        if self.page_number == final_page {
+                            self.page_number
+                        } else {
+                            self.page_number + 1
+                        }
+                    }
+                    false => {
+                        if self.page_number == 1 {
+                            self.page_number
+                        } else {
+                            self.page_number - 1
+                        }
+                    }
+                };
 
                 let tmp = self.comic.chapters.clone();
                 let chapters = tmp
                     .into_iter()
-                    .skip(skip_chapters as usize)
+                    .skip(((new_page_number - 1) * 25) as usize)
+                    .take(25)
                     .collect::<Vec<Chapter>>();
 
                 if chapters.is_empty() {
@@ -102,12 +118,8 @@ impl Component for ComicPage {
                 }
 
                 self.shown_chapters = chapters;
-
-                self.last_fetched += amount; // Updates the latest chapter fetched lol
-
                 self.list_state.select(Some(0));
-
-
+                self.page_number = new_page_number;
             }
 
             NikaAction::SetChapters(chapters) => self.comic.chapters = chapters,
@@ -132,9 +144,10 @@ impl Component for ComicPage {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_set(border::ROUNDED)
-            .style(Style::new().fg(Color::Green));
+            .style(Style::new().fg(Color::Green))
+            .title_alignment(Alignment::Center);
 
-        let title = Paragraph::new(Text::from(self.comic.name.to_owned().bold()))
+        let paragraph = Paragraph::new(Text::from(self.comic.name.to_owned().bold()))
             .centered()
             .block(block.clone());
 
@@ -145,16 +158,18 @@ impl Component for ComicPage {
         .centered()
         .block(block.clone());
 
+        let total_pages = (self.comic.chapters.len() as f32 / 25_f32).ceil();
+        let tmp = format!("Page {} of {}", self.page_number, total_pages);
         let list = self
             .shown_chapters
             .iter()
             .map(|f| Text::from(f.name.as_str()))
             .collect::<List>()
-            .block(block)
+            .block(block.title("Chapters").title_bottom(tmp))
             .style(Style::new().fg(Color::White))
             .highlight_style(Style::new().fg(Color::LightGreen));
 
-        f.render_widget(title, inner_layout[0]);
+        f.render_widget(paragraph, inner_layout[0]);
         f.render_widget(more_info, inner_layout[1]);
         f.render_stateful_widget(list, main_layout[1], &mut self.list_state);
     }

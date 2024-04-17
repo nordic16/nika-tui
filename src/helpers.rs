@@ -110,27 +110,22 @@ pub async fn get_chapters(comic: &Comic) -> reqwest::Result<Vec<Chapter>> {
     Ok(chapters)
 }
 
-pub fn get_new_selection_index(val: Option<usize>, len: usize, direction: ListDirection) -> usize {
-    match val {
-        Some(i) => {
-            match direction {
-                ListDirection::TopToBottom => {
-                    if i == len - 1 {
-                        // Prevent user from selecting elements below the list
-                        i
-                    } else {
-                        i + 1
-                    }
-                }
-                ListDirection::BottomToTop => {
-                    if i > 0 {
-                        i - 1
-                    } else {
-                        i
-                    }
-                }
+pub fn get_new_selection_index(val: usize, len: usize, direction: ListDirection) -> usize {
+    match direction {
+        ListDirection::TopToBottom => {
+            if val == len - 1 {
+                // Prevent user from selecting elements below the list
+                val
+            } else {
+                val + 1
             }
         }
-        None => 0,
+        ListDirection::BottomToTop => {
+            if val > 0 {
+                val - 1
+            } else {
+                val
+            }
+        }
     }
 }
