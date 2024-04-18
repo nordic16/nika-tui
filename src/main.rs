@@ -7,9 +7,10 @@ pub mod components;
 pub mod constants;
 pub mod helpers;
 pub mod models;
-#[cfg(test)]
-mod tests;
 mod tui;
+
+#[cfg(test)]
+pub mod config;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
