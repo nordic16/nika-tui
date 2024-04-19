@@ -1,4 +1,6 @@
-use crossterm::event::{KeyCode, KeyEventKind};
+use std::io;
+
+use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
     prelude::*,
     widgets::{block::*, Borders, List, ListDirection, ListItem, ListState},
@@ -16,27 +18,29 @@ use crate::{
 use super::Component;
 
 #[derive(Default)]
+pub enum Sources { // This is a shitty solution, unfortunately, but my rust knowledge is very limited so....
+    #[default]
+    Mangapill,
+    Mangasee,
+}
+
+#[derive(Default)]
 pub struct SearchPage {
     action_tx: Option<UnboundedSender<NikaAction>>,
     search_results: Vec<Comic>,
     text_area: TextArea<'static>,
     mode: InputMode,
     list_state: ListState,
+    source: Sources
 }
 
 impl Component for SearchPage {
-    fn register_action_handler(
-        &mut self,
-        tx: tokio::sync::mpsc::UnboundedSender<crate::app::NikaAction>,
-    ) -> std::io::Result<()> {
+    fn register_action_handler(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()> {
         self.action_tx = Some(tx);
         Ok(())
     }
 
-    fn handle_key_events(
-        &mut self,
-        key: crossterm::event::KeyEvent,
-    ) -> std::io::Result<Option<crate::app::NikaAction>> {
+    fn handle_key_events(&mut self, key: event::KeyEvent) -> io::Result<Option<NikaAction>> {
         match self.mode {
             InputMode::Normal => {
                 match key.code {
@@ -109,12 +113,14 @@ impl Component for SearchPage {
         }
     }
 
-    fn update(&mut self, action: crate::app::NikaAction) {
+    fn update(&mut self, action: NikaAction) {
         match action {
             NikaAction::SearchComic(query) => {
                 let sender = self.action_tx.clone().unwrap();
+                let s = helpers::get_source(&self.source);
+
                 tokio::spawn(async move {
-                    let results = helpers::search_manga(&query).await;
+                    let results = s.search(&query).await;
 
                     let message = match results {
                         Ok(val) => NikaAction::SetSearchResults(val),
@@ -129,12 +135,13 @@ impl Component for SearchPage {
             NikaAction::SelectComic(mut c) => {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
                 sender.send(NikaAction::ShowLoadingScreen).unwrap();
-
+                let s = helpers::get_source(&self.source);
+                
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
-                    let chapters = c.get_chapters().await.unwrap();
-                    let info = c.get_comic_info().await.unwrap();
+                    let chapters = s.get_chapters(&c).await.unwrap();
+                    let info = s.get_info(&c).await.unwrap();
 
                     c.manga_info = info;
                     c.chapters = chapters;

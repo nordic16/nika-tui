@@ -59,7 +59,7 @@ impl Config {
         if let Some(dir) = home_dir {
             let s = dir.into_string().unwrap();
             let path = format!("{s}/{DEFAULT_CONFIG_DIR}");
-            let _ = fs::create_dir(&path);
+            let _ = fs::create_dir(path);
         }
     }
 }

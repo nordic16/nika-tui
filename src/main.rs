@@ -8,6 +8,7 @@ pub mod config;
 pub mod constants;
 pub mod helpers;
 pub mod models;
+pub mod traits;
 mod tui;
 
 #[tokio::main]
