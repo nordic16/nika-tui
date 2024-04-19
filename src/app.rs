@@ -1,7 +1,5 @@
 use crate::{
-    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component},
-    models::comic::{Chapter, Comic},
-    tui::Tui,
+    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component}, config::{self, Config}, models::comic::{Chapter, Comic}, tui::Tui
 };
 use std::io;
 
@@ -50,6 +48,7 @@ pub struct App {
     pub component: Box<dyn Component>,
     quit: bool,
     loading: bool,
+    pub config: Config,
 }
 
 impl Default for App {
@@ -58,6 +57,7 @@ impl Default for App {
             component: Box::<HomePage>::default(),
             quit: false,
             loading: false,
+            config: Config::get_or_default()
         }
     }
 }

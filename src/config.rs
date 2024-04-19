@@ -1,4 +1,4 @@
-use std::{env, fs::{self, File}};
+use std::{env, fs};
 
 use serde::{Deserialize, Serialize};
 
@@ -63,6 +63,16 @@ impl Config {
     }
 }
 
+
+impl Drop for Config {
+    fn drop(&mut self) {
+        let home_dir = env::var_os("HOME").unwrap().into_string().unwrap();
+        let fpath = format!("{home_dir}/{DEFAULT_CONFIG_DIR}/config.toml");
+
+        let s = toml::to_string(&self).unwrap();
+        std::fs::write(fpath, s).unwrap();
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -8,8 +8,6 @@ pub mod constants;
 pub mod helpers;
 pub mod models;
 mod tui;
-
-#[cfg(test)]
 pub mod config;
 
 #[tokio::main]
