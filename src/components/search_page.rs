@@ -133,8 +133,8 @@ impl Component for SearchPage {
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
-                    let chapters = helpers::get_chapters(&c).await.unwrap();
-                    let info = helpers::get_comic_info(&c).await.unwrap();
+                    let chapters = c.get_chapters().await.unwrap();
+                    let info = c.get_comic_info().await.unwrap();
 
                     c.manga_info = info;
                     c.chapters = chapters;

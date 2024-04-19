@@ -4,16 +4,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::DEFAULT_CONFIG_DIR;
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     anilist_token: String,
-    chapter_page_size: u16
+    chapter_page_size: u16,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { anilist_token: Default::default(), chapter_page_size: 25 }
+        Self {
+            anilist_token: Default::default(),
+            chapter_page_size: 25,
+        }
     }
 }
 
@@ -26,16 +28,15 @@ impl Config {
             let fpath = format!("{s}/{DEFAULT_CONFIG_DIR}/config.toml");
 
             Self::ensure_conditions();
-            
+
             match fs::read_to_string(&fpath) {
                 // Note: there might still be errors in the config, so unwrap_or_default() is necessary.
                 Ok(data) => toml::from_str(data.as_str()).unwrap_or_default(),
                 Err(_) => {
                     fs::write(fpath, "").unwrap();
                     Self::default()
-                },
+                }
             }
-
         } else {
             Self::default()
         }
@@ -50,7 +51,7 @@ impl Config {
     }
 
     /// If dir doesn't exist, create it. As for the config file itself, it's handled on get_or_default(), so no need to
-    /// handle the scenario where it doesn't exist here. 
+    /// handle the scenario where it doesn't exist here.
     fn ensure_conditions() {
         // Whether or not this command succeeds or not is irrelevant.
         let home_dir = env::var_os("HOME");
@@ -62,7 +63,6 @@ impl Config {
         }
     }
 }
-
 
 impl Drop for Config {
     fn drop(&mut self) {
@@ -76,8 +76,8 @@ impl Drop for Config {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs};
     use super::Config;
+    use std::{env, fs};
 
     #[test]
     fn load_existing_or_new() {
@@ -103,7 +103,6 @@ mod tests {
                 Ok(_) => println!("Done!"),
                 Err(_) => panic!("Couldn't write to file."),
             };
-
         } else {
             panic!("What? Couldn't find home dir.")
         }

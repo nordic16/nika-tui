@@ -146,7 +146,7 @@ impl Component for ComicPage {
             .border_set(border::ROUNDED)
             .style(Style::new().fg(Color::Green))
             .title_alignment(Alignment::Center);
-        
+
         let paragraph = Paragraph::new(Text::from(self.comic.name.to_owned().bold()))
             .centered()
             .block(block.clone());
@@ -166,7 +166,11 @@ impl Component for ComicPage {
             .iter()
             .map(|f| Text::from(f.name.as_str()))
             .collect::<List>()
-            .block(block.title(tmp).title_bottom("◀ previous, ▲ up, ▼ down, ▶ next"))
+            .block(
+                block
+                    .title(tmp)
+                    .title_bottom("◀ previous, ▲ up, ▼ down, ▶ next"),
+            )
             .style(Style::new().fg(Color::White))
             .highlight_style(Style::new().fg(Color::LightGreen));
 

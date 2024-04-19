@@ -1,5 +1,8 @@
 use crate::{
-    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component}, config::{self, Config}, models::comic::{Chapter, Comic}, tui::Tui
+    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component},
+    config::Config,
+    models::comic::{Chapter, Comic},
+    tui::Tui,
 };
 use std::io;
 
@@ -57,7 +60,7 @@ impl Default for App {
             component: Box::<HomePage>::default(),
             quit: false,
             loading: false,
-            config: Config::get_or_default()
+            config: Config::get_or_default(),
         }
     }
 }

@@ -4,11 +4,11 @@ use app::App;
 
 mod app;
 pub mod components;
+pub mod config;
 pub mod constants;
 pub mod helpers;
 pub mod models;
 mod tui;
-pub mod config;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
