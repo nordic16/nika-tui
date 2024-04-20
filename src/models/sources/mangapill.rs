@@ -46,14 +46,15 @@ impl Source for MangapillSource {
             match tmp {
                 Some(e) => {
                     let tmp = e.get("href").unwrap();
+                    let source = format!("{base_url}/{tmp}");
 
-                    mangas.push(Comic {
-                        name,
-                        source: format!("{base_url}{tmp}"),
-                        comic_type: ComicType::Manga,
-                        manga_info: None,
-                        chapters: Vec::new(),
-                    })
+                    mangas.push(Comic::new(
+                        &name,
+                        &source,
+                        ComicType::Manga,
+                        None,
+                        Vec::new(),
+                    ));
                 }
                 None => continue,
             }
@@ -71,10 +72,7 @@ impl Source for MangapillSource {
         let chapter_urls: Vec<_> = soup.tag("a").class("border-border").find_all().collect();
         let chapters: Vec<Chapter> = chapter_urls
             .into_iter()
-            .map(|f| Chapter {
-                name: f.text(),
-                source: format!("{base_url}{}", f.get("href").unwrap()),
-            })
+            .map(|f| Chapter::new(&f.text(), &format!("{base_url}{}", f.get("href").unwrap())))
             .collect();
 
         Ok(chapters)
@@ -94,11 +92,11 @@ impl Source for MangapillSource {
             }
 
             let status = values[4].text();
-            let year = values[6].text().parse::<u16>().unwrap();
+            let date = values[6].text();
 
             return Ok(Some(ComicInfo {
                 status,
-                year,
+                date,
                 genres: vec![String::from("fantasy")],
             }));
         }
@@ -150,7 +148,7 @@ mod tests {
                 println!("Comic info secured!");
                 println!(
                     "Year: {}\nStatus: {}\nGenres: {}",
-                    val.year,
+                    val.date,
                     val.status,
                     val.genres.join(",")
                 )

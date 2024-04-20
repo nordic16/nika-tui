@@ -152,7 +152,7 @@ impl Component for ComicPage {
             .block(block.clone());
 
         let more_info = Paragraph::new(vec![
-            format!("Year: {}", info.year.to_string().bold()).into(),
+            format!("Year: {}", info.date.to_string().bold()).into(),
             format!("Genres: {}", info.genres.join(", ").bold()).into(),
         ])
         .centered()
