@@ -7,7 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::app::{NikaAction, Page};
 
-use super::Component;
+use crate::traits::Component;
 
 #[derive(Default)]
 pub struct HomePage {
@@ -33,7 +33,7 @@ impl Component for HomePage {
         f.render_widget(paragraph, rect);
     }
 
-    fn register_action_handler(&mut self, tx: UnboundedSender<NikaAction>) -> std::io::Result<()> {
+    fn init(&mut self, tx: UnboundedSender<NikaAction>) -> std::io::Result<()> {
         self.action_handler = Some(tx);
         Ok(())
     }

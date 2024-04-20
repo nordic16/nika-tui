@@ -110,15 +110,17 @@ impl Source for MangapillSource {
     fn base_url(&self) -> &'static str {
         "https://mangapill.com"
     }
-}
 
+    fn name(&self) -> &'static str {
+        "mangapill"
+    }
+}
 
 impl MangapillSource {
     pub fn new() -> Self {
         Self {}
     }
 }
-
 
 #[cfg(test)]
 mod tests {

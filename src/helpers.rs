@@ -1,6 +1,5 @@
 use ratatui::widgets::ListDirection;
-
-use crate::{components::search_page::Sources, models::sources::{mangapill::MangapillSource, mangasee::MangaseeSource}, traits::Source};
+use crate::traits::Source;
 
 pub async fn get_search_response_body(
     query: &str,
@@ -34,9 +33,11 @@ pub fn get_new_selection_index(val: usize, len: usize, direction: ListDirection)
     }
 }
 
+/* 
 pub fn get_source(source: &Sources) -> Box<dyn Source> {
     match source {
         Sources::Mangapill => Box::new(MangapillSource::new()),
         Sources::Mangasee => Box::new(MangaseeSource::new()),
     }
 }
+*/

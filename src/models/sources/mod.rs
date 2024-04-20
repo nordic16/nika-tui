@@ -1,2 +1,2 @@
 pub mod mangapill;
-pub mod mangasee;
+pub mod mangareader;

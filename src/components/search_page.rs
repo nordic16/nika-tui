@@ -12,17 +12,9 @@ use tui_textarea::TextArea;
 use crate::{
     app::{InputMode, NikaAction, Page},
     helpers,
-    models::comic::Comic,
+    models::{comic::Comic, sources::{mangapill::MangapillSource, mangareader::Mangareader}}, traits::{Component, Source},
 };
 
-use super::Component;
-
-#[derive(Default)]
-pub enum Sources { // This is a shitty solution, unfortunately, but my rust knowledge is very limited so....
-    #[default]
-    Mangapill,
-    Mangasee,
-}
 
 #[derive(Default)]
 pub struct SearchPage {
@@ -31,12 +23,16 @@ pub struct SearchPage {
     text_area: TextArea<'static>,
     mode: InputMode,
     list_state: ListState,
-    source: Sources
+    sources: Vec<Box<dyn Source>>,
+    selected_source_index: usize
 }
 
 impl Component for SearchPage {
-    fn register_action_handler(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()> {
+    fn init(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()> {
         self.action_tx = Some(tx);
+        let mut vec: Vec<Box<dyn Source>> = vec![Box::new(MangapillSource::new()), Box::new(Mangareader::new())];
+        self.sources.append(&mut vec);
+        
         Ok(())
     }
 
@@ -49,6 +45,16 @@ impl Component for SearchPage {
                     KeyCode::Char('e') => {
                         self.mode = InputMode::Editing;
                         self.list_state.select(None);
+                        Ok(None)
+                    }
+
+                    KeyCode::Char('s') => {
+                        self.selected_source_index += 1;
+                        
+                        if self.selected_source_index == self.sources.len() {
+                            self.selected_source_index = 0;
+                        }
+
                         Ok(None)
                     }
 
@@ -82,7 +88,6 @@ impl Component for SearchPage {
 
                     KeyCode::Enter => {
                         let comic = &self.search_results[self.list_state.selected().unwrap()];
-
                         Ok(Some(NikaAction::SelectComic(comic.to_owned())))
                     }
 
@@ -117,7 +122,7 @@ impl Component for SearchPage {
         match action {
             NikaAction::SearchComic(query) => {
                 let sender = self.action_tx.clone().unwrap();
-                let s = helpers::get_source(&self.source);
+                let s = self.sources[self.selected_source_index].clone();
 
                 tokio::spawn(async move {
                     let results = s.search(&query).await;
@@ -135,7 +140,7 @@ impl Component for SearchPage {
             NikaAction::SelectComic(mut c) => {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
                 sender.send(NikaAction::ShowLoadingScreen).unwrap();
-                let s = helpers::get_source(&self.source);
+                let s = self.sources[self.selected_source_index].clone();
                 
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
@@ -188,11 +193,15 @@ impl Component for SearchPage {
             .map(|f| ListItem::new(f.name.as_str()))
             .collect::<Vec<ListItem>>();
 
+        let source = Text::from(format!("Source: {}", self.sources[self.selected_source_index].name()))
+            .centered();
+
         let results = List::new(items)
             .block(block2)
             .highlight_style(Style::new().fg(Color::Yellow));
 
         f.render_widget(self.text_area.widget(), layout[0]);
+        f.render_widget(source, layout[0]);
         f.render_stateful_widget(results, layout[1], &mut self.list_state);
     }
 }

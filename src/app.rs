@@ -1,5 +1,6 @@
 use crate::{
-    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage, Component},
+    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage},
+    traits::Component,
     config::Config,
     models::comic::{Chapter, Comic},
     tui::Tui,
@@ -72,7 +73,7 @@ impl App {
         tui.init_panic_hook();
 
         let (tx, mut rx) = unbounded_channel::<NikaAction>();
-        self.component.register_action_handler(tx.clone())?;
+        self.component.init(tx.clone())?;
 
         tui.run()?;
 
@@ -108,7 +109,7 @@ impl App {
                         self.component = page;
 
                         // Needs to be registered again after assigning a new component.
-                        self.component.register_action_handler(tx.clone())?;
+                        self.component.init(tx.clone())?;
                     }
                     _ => {
                         self.component.update(act);

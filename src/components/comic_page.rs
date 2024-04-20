@@ -12,7 +12,7 @@ use ratatui::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::Component;
+use crate::traits::Component;
 
 pub struct ComicPage {
     action_tx: Option<UnboundedSender<NikaAction>>,
@@ -38,7 +38,7 @@ impl ComicPage {
 }
 
 impl Component for ComicPage {
-    fn register_action_handler(&mut self, tx: UnboundedSender<NikaAction>) -> std::io::Result<()> {
+    fn init(&mut self, tx: UnboundedSender<NikaAction>) -> std::io::Result<()> {
         self.action_tx = Some(tx);
 
         Ok(())
