@@ -7,7 +7,6 @@ use crate::{
     traits::Source,
 };
 
-#[derive(Clone, Default)]
 pub struct MangapillSource;
 
 #[async_trait]

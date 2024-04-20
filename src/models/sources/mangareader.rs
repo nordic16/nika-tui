@@ -5,10 +5,9 @@ use crate::{
     traits::Source,
 };
 
-#[derive(Clone, Default)]
-pub struct Mangareader;
+pub struct MangareaderSource;
 
-impl Mangareader {
+impl MangareaderSource {
     pub fn new() -> Self {
         Self {}
     }
@@ -16,7 +15,7 @@ impl Mangareader {
 
 // TODO
 #[async_trait]
-impl Source for Mangareader {
+impl Source for MangareaderSource {
     async fn search(&self, query: &str) -> reqwest::Result<Vec<Comic>> {
         Ok(Vec::new())
     }

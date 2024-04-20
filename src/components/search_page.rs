@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, sync::Arc};
 
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
@@ -14,7 +14,7 @@ use crate::{
     helpers,
     models::{
         comic::Comic,
-        sources::{mangapill::MangapillSource, mangareader::Mangareader},
+        sources::{mangapill::MangapillSource, mangareader::MangareaderSource},
     },
     traits::{Component, Source},
 };
@@ -26,16 +26,16 @@ pub struct SearchPage {
     text_area: TextArea<'static>,
     mode: InputMode,
     list_state: ListState,
-    sources: Vec<Box<dyn Source>>,
+    sources: Vec<Arc<dyn Source>>,
     selected_source_index: usize,
 }
 
 impl Component for SearchPage {
     fn init(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()> {
         self.action_tx = Some(tx);
-        let mut vec: Vec<Box<dyn Source>> = vec![
-            Box::new(MangapillSource::new()),
-            Box::new(Mangareader::new()),
+        let mut vec: Vec<Arc<dyn Source>> = vec![
+            Arc::new(MangapillSource::new()),
+            Arc::new(MangareaderSource::new()),
         ];
         self.sources.append(&mut vec);
 
