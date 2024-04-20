@@ -12,9 +12,12 @@ use tui_textarea::TextArea;
 use crate::{
     app::{InputMode, NikaAction, Page},
     helpers,
-    models::{comic::Comic, sources::{mangapill::MangapillSource, mangareader::Mangareader}}, traits::{Component, Source},
+    models::{
+        comic::Comic,
+        sources::{mangapill::MangapillSource, mangareader::Mangareader},
+    },
+    traits::{Component, Source},
 };
-
 
 #[derive(Default)]
 pub struct SearchPage {
@@ -24,15 +27,18 @@ pub struct SearchPage {
     mode: InputMode,
     list_state: ListState,
     sources: Vec<Box<dyn Source>>,
-    selected_source_index: usize
+    selected_source_index: usize,
 }
 
 impl Component for SearchPage {
     fn init(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()> {
         self.action_tx = Some(tx);
-        let mut vec: Vec<Box<dyn Source>> = vec![Box::new(MangapillSource::new()), Box::new(Mangareader::new())];
+        let mut vec: Vec<Box<dyn Source>> = vec![
+            Box::new(MangapillSource::new()),
+            Box::new(Mangareader::new()),
+        ];
         self.sources.append(&mut vec);
-        
+
         Ok(())
     }
 
@@ -50,7 +56,7 @@ impl Component for SearchPage {
 
                     KeyCode::Char('s') => {
                         self.selected_source_index += 1;
-                        
+
                         if self.selected_source_index == self.sources.len() {
                             self.selected_source_index = 0;
                         }
@@ -141,7 +147,7 @@ impl Component for SearchPage {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
                 sender.send(NikaAction::ShowLoadingScreen).unwrap();
                 let s = self.sources[self.selected_source_index].clone();
-                
+
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
@@ -193,8 +199,11 @@ impl Component for SearchPage {
             .map(|f| ListItem::new(f.name.as_str()))
             .collect::<Vec<ListItem>>();
 
-        let source = Text::from(format!("Source: {}", self.sources[self.selected_source_index].name()))
-            .centered();
+        let source = Text::from(format!(
+            "Source: {}",
+            self.sources[self.selected_source_index].name()
+        ))
+        .centered();
 
         let results = List::new(items)
             .block(block2)

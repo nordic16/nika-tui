@@ -5,14 +5,14 @@ use crossterm::event::KeyEvent;
 use ratatui::{layout::Rect, Frame};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{app::NikaAction, models::{
-    comic::{Chapter, Comic, ComicInfo},
-    sources::mangapill::MangapillSource,
-}, tui::NikaEvent};
+use crate::{
+    app::NikaAction,
+    models::comic::{Chapter, Comic, ComicInfo},
+    tui::NikaEvent,
+};
 
 #[async_trait]
 pub trait Source: Send + Sync {
-
     /// Returns a list of search results based on query
     async fn search(&self, query: &str) -> reqwest::Result<Vec<Comic>>;
 
@@ -25,7 +25,6 @@ pub trait Source: Send + Sync {
 
     fn name(&self) -> &'static str;
 }
-
 
 impl Clone for Box<dyn Source> {
     fn clone(&self) -> Self {

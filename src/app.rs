@@ -1,8 +1,8 @@
 use crate::{
     components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage},
-    traits::Component,
     config::Config,
     models::comic::{Chapter, Comic},
+    traits::Component,
     tui::Tui,
 };
 use std::io;

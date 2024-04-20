@@ -1,5 +1,5 @@
-use ratatui::widgets::ListDirection;
 use crate::traits::Source;
+use ratatui::widgets::ListDirection;
 
 pub async fn get_search_response_body(
     query: &str,
@@ -33,7 +33,7 @@ pub fn get_new_selection_index(val: usize, len: usize, direction: ListDirection)
     }
 }
 
-/* 
+/*
 pub fn get_source(source: &Sources) -> Box<dyn Source> {
     match source {
         Sources::Mangapill => Box::new(MangapillSource::new()),
