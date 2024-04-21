@@ -1,11 +1,9 @@
 use async_trait::async_trait;
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
-use crate::{
-    helpers,
-    models::comic::{Chapter, Comic, ComicInfo, ComicType},
-    traits::Source,
-};
+use crate::helpers;
+use crate::models::comic::{Chapter, Comic, ComicInfo, ComicType};
+use crate::traits::Source;
 
 pub struct MangapillSource;
 
@@ -121,13 +119,9 @@ impl MangapillSource {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        models::{
-            comic::{Comic, ComicType},
-            sources::mangapill::MangapillSource,
-        },
-        traits::Source,
-    };
+    use crate::models::comic::{Comic, ComicType};
+    use crate::models::sources::mangapill::MangapillSource;
+    use crate::traits::Source;
 
     #[tokio::test]
     async fn test_scrape_manga_info() {

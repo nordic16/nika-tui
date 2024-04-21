@@ -1,7 +1,6 @@
-use ratatui::{
-    prelude::*,
-    widgets::{block::*, Borders, Paragraph},
-};
+use ratatui::prelude::*;
+use ratatui::widgets::block::*;
+use ratatui::widgets::{Borders, Paragraph};
 #[derive(Debug, Default)]
 pub struct OptionsPage;
 

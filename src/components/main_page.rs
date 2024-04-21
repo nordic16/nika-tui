@@ -1,11 +1,11 @@
+use crossterm::event::KeyCode;
+use ratatui::prelude::*;
+use ratatui::widgets::block::*;
+use ratatui::widgets::{Borders, Paragraph};
+use tokio::sync::mpsc::UnboundedSender;
+
 use crate::app::{NikaAction, Page};
 use crate::traits::Component;
-use crossterm::event::KeyCode;
-use ratatui::{
-    prelude::*,
-    widgets::{block::*, Borders, Paragraph},
-};
-use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Default)]
 pub struct HomePage {

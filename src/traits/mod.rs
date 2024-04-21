@@ -2,14 +2,13 @@ use std::io;
 
 use async_trait::async_trait;
 use crossterm::event::KeyEvent;
-use ratatui::{layout::Rect, Frame};
+use ratatui::layout::Rect;
+use ratatui::Frame;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{
-    app::NikaAction,
-    models::comic::{Chapter, Comic, ComicInfo},
-    tui::NikaEvent,
-};
+use crate::app::NikaAction;
+use crate::models::comic::{Chapter, Comic, ComicInfo};
+use crate::tui::NikaEvent;
 
 #[async_trait]
 pub trait Source: Send + Sync {

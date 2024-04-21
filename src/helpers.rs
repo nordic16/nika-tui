@@ -1,5 +1,6 @@
-use crate::traits::Source;
 use ratatui::widgets::ListDirection;
+
+use crate::traits::Source;
 
 pub async fn get_search_response_body(
     query: &str,

@@ -14,6 +14,5 @@ mod tui;
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let mut app = App::default();
-
     app.run().await
 }

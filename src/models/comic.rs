@@ -34,17 +34,20 @@ impl Chapter {
 #[derive(Debug, Clone, Default)]
 pub struct ComicInfo {
     // might change later.
-    pub date: String, 
+    pub date: String,
     pub status: String,
     pub genres: Vec<String>,
 }
 
 impl ComicInfo {
     pub fn new(date: &str, status: &str, genres: Vec<String>) -> Self {
-        Self {date: date.to_owned(), status: status.to_owned(), genres }
+        Self {
+            date: date.to_owned(),
+            status: status.to_owned(),
+            genres,
+        }
     }
 }
-
 
 impl Comic {
     pub fn new(

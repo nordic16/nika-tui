@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
-use crate::{
-    models::comic::{Chapter, Comic, ComicInfo, ComicType},
-    traits::Source,
-};
+use crate::models::comic::{Chapter, Comic, ComicInfo, ComicType};
+use crate::traits::Source;
 
 pub struct MangareaderSource;
 
@@ -74,14 +72,16 @@ impl Source for MangareaderSource {
 
         let info = soup.class("anisc-info").find().unwrap();
         let fields: Vec<_> = info.class("item").find_all().collect();
-        let spans: Vec<_> = fields.into_iter().map(|f| f.class("name").find().unwrap()).collect();
+        let spans: Vec<_> = fields
+            .into_iter()
+            .map(|f| f.class("name").find().unwrap())
+            .collect();
 
         let date = spans[4].text();
         let status = spans[1].text();
         let genres = vec![String::from("todo")];
 
         Ok(Some(ComicInfo::new(&date, &status, genres)))
-        
     }
 
     fn name(&self) -> &'static str {

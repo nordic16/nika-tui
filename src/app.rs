@@ -1,20 +1,18 @@
-use crate::{
-    components::{comic_page::ComicPage, main_page::HomePage, search_page::SearchPage},
-    config::Config,
-    models::comic::{Chapter, Comic},
-    traits::Component,
-    tui::Tui,
-};
 use std::io;
 
 use crossterm::event::KeyEvent;
-
-use ratatui::{
-    style::{Style, Stylize},
-    text::Text,
-    widgets::{Block, BorderType, Borders, Paragraph},
-};
+use ratatui::style::{Style, Stylize};
+use ratatui::text::Text;
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use tokio::sync::mpsc::unbounded_channel;
+
+use crate::components::comic_page::ComicPage;
+use crate::components::main_page::HomePage;
+use crate::components::search_page::SearchPage;
+use crate::config::Config;
+use crate::models::comic::{Chapter, Comic};
+use crate::traits::Component;
+use crate::tui::Tui;
 
 #[derive(Debug, Default, Clone)]
 pub enum Page {

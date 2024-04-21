@@ -30,7 +30,8 @@ impl Config {
             Self::ensure_conditions();
 
             match fs::read_to_string(&fpath) {
-                // Note: there might still be errors in the config, so unwrap_or_default() is necessary.
+                // Note: there might still be errors in the config, so unwrap_or_default() is
+                // necessary.
                 Ok(data) => toml::from_str(data.as_str()).unwrap_or_default(),
                 Err(_) => {
                     fs::write(fpath, "").unwrap();
@@ -50,8 +51,8 @@ impl Config {
         &self.anilist_token
     }
 
-    /// If dir doesn't exist, create it. As for the config file itself, it's handled on get_or_default(), so no need to
-    /// handle the scenario where it doesn't exist here.
+    /// If dir doesn't exist, create it. As for the config file itself, it's handled on
+    /// get_or_default(), so no need to handle the scenario where it doesn't exist here.
     fn ensure_conditions() {
         // Whether or not this command succeeds or not is irrelevant.
         let home_dir = env::var_os("HOME");
@@ -76,8 +77,9 @@ impl Drop for Config {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
     use std::{env, fs};
+
+    use super::Config;
 
     #[test]
     fn load_existing_or_new() {

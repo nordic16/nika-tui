@@ -1,17 +1,13 @@
-use crate::{
-    app::{NikaAction, Page},
-    helpers,
-    models::comic::{Chapter, Comic},
-};
-
 use crossterm::event::KeyCode;
-use ratatui::{
-    prelude::*,
-    symbols::border,
-    widgets::{block::*, Borders, List, ListDirection, ListState, Paragraph},
-};
+use ratatui::prelude::*;
+use ratatui::symbols::border;
+use ratatui::widgets::block::*;
+use ratatui::widgets::{Borders, List, ListDirection, ListState, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 
+use crate::app::{NikaAction, Page};
+use crate::helpers;
+use crate::models::comic::{Chapter, Comic};
 use crate::traits::Component;
 
 pub struct ComicPage {

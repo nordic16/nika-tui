@@ -1,16 +1,12 @@
-use std::{
-    io::{self, stdout},
-    panic::{set_hook, take_hook},
-};
+use std::io::{self, stdout};
+use std::panic::{set_hook, take_hook};
 
-use crossterm::{
-    cursor,
-    event::{Event, EventStream, KeyEvent, KeyEventKind},
-    execute,
-    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
-};
+use crossterm::event::{Event, EventStream, KeyEvent, KeyEventKind};
+use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::{cursor, execute};
 use futures::{FutureExt, StreamExt};
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 #[derive(Clone)]

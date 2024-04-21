@@ -1,23 +1,19 @@
-use std::{io, sync::Arc};
+use std::io;
+use std::sync::Arc;
 
 use crossterm::event::{self, KeyCode, KeyEventKind};
-use ratatui::{
-    prelude::*,
-    widgets::{block::*, Borders, List, ListDirection, ListItem, ListState},
-};
-
+use ratatui::prelude::*;
+use ratatui::widgets::block::*;
+use ratatui::widgets::{Borders, List, ListDirection, ListItem, ListState};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_textarea::TextArea;
 
-use crate::{
-    app::{InputMode, NikaAction, Page},
-    helpers,
-    models::{
-        comic::Comic,
-        sources::{mangapill::MangapillSource, mangareader::MangareaderSource},
-    },
-    traits::{Component, Source},
-};
+use crate::app::{InputMode, NikaAction, Page};
+use crate::helpers;
+use crate::models::comic::Comic;
+use crate::models::sources::mangapill::MangapillSource;
+use crate::models::sources::mangareader::MangareaderSource;
+use crate::traits::{Component, Source};
 
 #[derive(Default)]
 pub struct SearchPage {
