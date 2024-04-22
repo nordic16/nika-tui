@@ -12,7 +12,7 @@ use crate::app::{InputMode, NikaAction, Page};
 use crate::helpers;
 use crate::models::comic::Comic;
 use crate::models::sources::mangapill::MangapillSource;
-use crate::models::sources::mangareader::MangareaderSource;
+use crate::models::sources::mangasee::MangaseeSource;
 use crate::traits::{Component, Source};
 
 #[derive(Default)]
@@ -31,7 +31,7 @@ impl Component for SearchPage {
         self.action_tx = Some(tx);
         let mut vec: Vec<Arc<dyn Source>> = vec![
             Arc::new(MangapillSource::new()),
-            Arc::new(MangareaderSource::new()),
+            Arc::new(MangaseeSource::new()),
         ];
         self.sources.append(&mut vec);
 
