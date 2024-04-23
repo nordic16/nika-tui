@@ -37,7 +37,6 @@ impl Source for MangaseeSource {
                     &p.text(),
                     &format!("{}{}", self.base_url(), p.get("href").unwrap()),
                     ComicType::Manga,
-                    None,
                     Vec::new(),
                 )
             })
@@ -129,7 +128,6 @@ mod tests {
             "One Piece",
             "https://mangareader.to/one-piece-colored-edition-55493",
             ComicType::Manga,
-            None,
             Vec::new(),
         );
         let chapters = source.get_chapters(&comic).await.unwrap();

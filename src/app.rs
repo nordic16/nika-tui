@@ -11,7 +11,7 @@ use crate::components::comic_page::ComicPage;
 use crate::components::main_page::HomePage;
 use crate::components::search_page::SearchPage;
 use crate::config::Config;
-use crate::models::comic::{Chapter, Comic};
+use crate::models::comic::{Chapter, Comic, ComicInfo};
 use crate::traits::{Component, Source};
 use crate::tui::Tui;
 
@@ -21,7 +21,7 @@ pub enum Page {
     Home,
     Search,
     Options,
-    Comic(Comic, Arc<dyn Source>),
+    Comic(Comic, Arc<dyn Source>, ComicInfo),
 }
 
 #[derive(Default, Clone)]
@@ -130,7 +130,7 @@ impl App {
             Page::Home => Box::<HomePage>::default(),
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
-            Page::Comic(c, s) => Box::new(ComicPage::new(c, s)),
+            Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i)),
         }
     }
 

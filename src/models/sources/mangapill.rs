@@ -1,8 +1,8 @@
 use std::borrow::BorrowMut;
-use std::{env, fs};
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::{env, fs};
 
 use async_trait::async_trait;
 use rand::distributions::Alphanumeric;
@@ -54,13 +54,12 @@ impl Source for MangapillSource {
             match tmp {
                 Some(e) => {
                     let tmp = e.get("href").unwrap();
-                    let source = format!("{base_url}/{tmp}");
+                    let source = format!("{base_url}{tmp}");
 
                     mangas.push(Comic::new(
                         &name,
                         &source,
                         ComicType::Manga,
-                        None,
                         Vec::new(),
                     ));
                 }
@@ -122,13 +121,23 @@ impl Source for MangapillSource {
 
     async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String> {
         let client = reqwest::Client::new();
-        let body = client.get(&chapter.source).header("Referer", self.base_url()).send().await?.text().await?;
+        let body = client
+            .get(&chapter.source)
+            .header("Referer", self.base_url())
+            .send()
+            .await?
+            .text()
+            .await?;
 
         println!("{body}");
 
         let path = {
             let rng = rand::thread_rng();
-            let str: String = rng.sample_iter(&Alphanumeric).take(8).map(char::from).collect();
+            let str: String = rng
+                .sample_iter(&Alphanumeric)
+                .take(8)
+                .map(char::from)
+                .collect();
 
             Path::join(&env::temp_dir(), str)
         };
@@ -140,7 +149,10 @@ impl Source for MangapillSource {
         let urls: Vec<String> = {
             let soup = Soup::new(&body);
             let images: Vec<_> = soup.tag("img").find_all().collect();
-            images.into_iter().map(|f| f.get("data-src").unwrap()).collect()
+            images
+                .into_iter()
+                .map(|f| f.get("data-src").unwrap())
+                .collect()
         };
 
         for (i, url) in urls.iter().enumerate() {
@@ -150,14 +162,13 @@ impl Source for MangapillSource {
                 .send()
                 .await?;
 
-            let fname = format!("a-{i}.jpeg");
+            let fname = format!("page-{i}.jpeg");
             let path = path.join(fname);
             let mut f = File::create(path).await?;
-            
+
             while let Some(chunk) = data.chunk().await? {
                 f.write_all(&chunk).await?;
             }
-            
         }
 
         Ok(String::from(path.to_str().unwrap()))
@@ -184,7 +195,6 @@ mod tests {
             name: String::from("One Piece"),
             source: String::from("https://mangapill.com/manga/2/one-piece"),
             comic_type: ComicType::Manga,
-            manga_info: None,
             chapters: Vec::new(),
         };
 
@@ -212,7 +222,6 @@ mod tests {
             name: String::from("One Piece"),
             source: String::from("https://mangapill.com/manga/2/one-piece"),
             comic_type: ComicType::Manga,
-            manga_info: None,
             chapters: Vec::new(),
         };
 
@@ -230,7 +239,12 @@ mod tests {
     #[tokio::test]
     async fn test_download_chapter() -> anyhow::Result<()> {
         let source = MangapillSource::new();
-        let comic = Comic::new("One Piece", "https://mangapill.com/manga/2/one-piece", ComicType::Manga, None, Vec::new());
+        let comic = Comic::new(
+            "One Piece",
+            "https://mangapill.com/manga/2/one-piece",
+            ComicType::Manga,
+            Vec::new(),
+        );
         let chapters = source.get_chapters(&comic).await?;
 
         let chapter = &chapters[0];

@@ -1,15 +1,17 @@
+use std::io;
 use std::sync::Arc;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{self, KeyCode};
 use ratatui::prelude::*;
 use ratatui::symbols::border;
 use ratatui::widgets::block::*;
 use ratatui::widgets::{Borders, List, ListDirection, ListState, Paragraph};
+use tokio::process::Command;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::app::{NikaAction, Page};
 use crate::helpers;
-use crate::models::comic::{Chapter, Comic};
+use crate::models::comic::{Chapter, Comic, ComicInfo};
 use crate::traits::{Component, Source};
 
 pub struct ComicPage {
@@ -19,10 +21,11 @@ pub struct ComicPage {
     shown_chapters: Vec<Chapter>,
     page_number: u16,
     source: Arc<dyn Source>,
+    info: ComicInfo,
 }
 
 impl ComicPage {
-    pub fn new(comic: Comic, source: Arc<dyn Source>) -> Self {
+    pub fn new(comic: Comic, source: Arc<dyn Source>, info: ComicInfo) -> Self {
         let c = comic.clone();
         let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
 
@@ -33,6 +36,7 @@ impl ComicPage {
             shown_chapters: chapters,
             page_number: 1,
             source,
+            info
         }
     }
 }
@@ -46,8 +50,8 @@ impl Component for ComicPage {
 
     fn handle_key_events(
         &mut self,
-        key: crossterm::event::KeyEvent,
-    ) -> std::io::Result<Option<NikaAction>> {
+        key: event::KeyEvent,
+    ) -> io::Result<Option<NikaAction>> {
         match key.code {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
@@ -137,7 +141,13 @@ impl Component for ComicPage {
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
-                    let _ = source.download_chapter(&chap).await.unwrap();
+                    match source.download_chapter(&chap).await {
+                        Ok(path) => {
+                            Command::new("feh").args([path])
+                            .output().await
+                        },
+                        Err(e) => panic!("{:?}", e), // temporary lol
+                    }
                 });
             }
 
@@ -148,8 +158,6 @@ impl Component for ComicPage {
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {
-        let info = self.comic.manga_info.as_ref().unwrap();
-
         let main_layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![Constraint::Percentage(25), Constraint::Percentage(75)])
@@ -171,8 +179,8 @@ impl Component for ComicPage {
             .block(block.clone());
 
         let more_info = Paragraph::new(vec![
-            format!("Year: {}", info.date.to_string().bold()).into(),
-            format!("Genres: {}", info.genres.join(", ").bold()).into(),
+            format!("Year: {}", self.info.date.to_string().bold()).into(),
+            format!("Genres: {}", self.info.genres.join(", ").bold()).into(),
         ])
         .centered()
         .block(block.clone());

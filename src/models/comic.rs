@@ -10,7 +10,6 @@ pub struct Comic {
     pub name: String,
     pub source: String,
     pub comic_type: ComicType,
-    pub manga_info: Option<ComicInfo>,
     pub chapters: Vec<Chapter>,
 }
 
@@ -52,14 +51,12 @@ impl Comic {
         name: &str,
         source: &str,
         comic_type: ComicType,
-        manga_info: Option<ComicInfo>,
         chapters: Vec<Chapter>,
     ) -> Self {
         Self {
             name: name.to_owned(),
             source: source.to_owned(),
             comic_type,
-            manga_info,
             chapters,
         }
     }

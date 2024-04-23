@@ -149,12 +149,11 @@ impl Component for SearchPage {
                     let chapters = source.get_chapters(&c).await.unwrap();
                     let info = source.get_info(&c).await.unwrap();
 
-                    c.manga_info = info;
                     c.chapters = chapters;
 
                     sender.send(NikaAction::LiftLoadingScreen).unwrap();
                     sender
-                        .send(NikaAction::ChangePage(Page::Comic(c, source)))
+                        .send(NikaAction::ChangePage(Page::Comic(c, source, info.unwrap())))
                         .unwrap();
                 });
             }
