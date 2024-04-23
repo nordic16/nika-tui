@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
 use ratatui::symbols::border;
@@ -8,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::app::{NikaAction, Page};
 use crate::helpers;
 use crate::models::comic::{Chapter, Comic};
-use crate::traits::Component;
+use crate::traits::{Component, Source};
 
 pub struct ComicPage {
     action_tx: Option<UnboundedSender<NikaAction>>,
@@ -16,10 +18,11 @@ pub struct ComicPage {
     list_state: ListState,
     shown_chapters: Vec<Chapter>,
     page_number: u16,
+    source: Arc<dyn Source>,
 }
 
 impl ComicPage {
-    pub fn new(comic: Comic) -> Self {
+    pub fn new(comic: Comic, source: Arc<dyn Source>) -> Self {
         let c = comic.clone();
         let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
 
@@ -29,6 +32,7 @@ impl ComicPage {
             list_state: ListState::default().with_selected(Some(0)),
             shown_chapters: chapters,
             page_number: 1,
+            source,
         }
     }
 }
@@ -76,11 +80,17 @@ impl Component for ComicPage {
             KeyCode::Right => Ok(Some(NikaAction::FetchNewChapters(true))),
             KeyCode::Left => Ok(Some(NikaAction::FetchNewChapters(false))),
 
+            KeyCode::Enter => {
+                let chapter = self.shown_chapters[self.list_state.selected().unwrap()].clone();
+
+                Ok(Some(NikaAction::FetchChapter(chapter)))
+            }
+
             _ => Ok(None),
         }
     }
 
-    fn update(&mut self, action: NikaAction) {
+    fn update(&mut self, action: NikaAction) -> anyhow::Result<()> {
         match action {
             NikaAction::FetchNewChapters(a) => {
                 let final_page = (self.comic.chapters.len() as f32 / 25_f32).ceil() as u16;
@@ -110,7 +120,7 @@ impl Component for ComicPage {
                     .collect::<Vec<Chapter>>();
 
                 if chapters.is_empty() {
-                    return;
+                    return Ok(());
                 }
 
                 self.shown_chapters = chapters;
@@ -120,8 +130,21 @@ impl Component for ComicPage {
 
             NikaAction::SetChapters(chapters) => self.comic.chapters = chapters,
 
+            NikaAction::FetchChapter(chap) => {
+                let sender = self.action_tx.clone().unwrap();
+                let source = self.source.clone();
+
+                tokio::spawn(async move {
+                    sender.send(NikaAction::ShowLoadingScreen).unwrap();
+
+                    let _ = source.download_chapter(&chap).await.unwrap();
+                });
+            }
+
             _ => {}
-        }
+        };
+
+        Ok(())
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {

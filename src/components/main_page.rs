@@ -1,3 +1,5 @@
+use std::io;
+
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
 use ratatui::widgets::block::*;
@@ -39,7 +41,7 @@ impl Component for HomePage {
     fn handle_key_events(
         &mut self,
         key: crossterm::event::KeyEvent,
-    ) -> std::io::Result<Option<NikaAction>> {
+    ) -> io::Result<Option<NikaAction>> {
         match key.code {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
@@ -47,5 +49,7 @@ impl Component for HomePage {
         }
     }
 
-    fn update(&mut self, action: NikaAction) {}
+    fn update(&mut self, action: NikaAction) -> anyhow::Result<()> {
+        Ok(())
+    }
 }

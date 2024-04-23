@@ -12,7 +12,6 @@ use crate::app::{InputMode, NikaAction, Page};
 use crate::helpers;
 use crate::models::comic::Comic;
 use crate::models::sources::mangapill::MangapillSource;
-use crate::models::sources::mangasee::MangaseeSource;
 use crate::traits::{Component, Source};
 
 #[derive(Default)]
@@ -31,7 +30,7 @@ impl Component for SearchPage {
         self.action_tx = Some(tx);
         let mut vec: Vec<Arc<dyn Source>> = vec![
             Arc::new(MangapillSource::new()),
-            Arc::new(MangaseeSource::new()),
+            // Arc::new(MangaseeSource::new()),
         ];
         self.sources.append(&mut vec);
 
@@ -120,7 +119,7 @@ impl Component for SearchPage {
         }
     }
 
-    fn update(&mut self, action: NikaAction) {
+    fn update(&mut self, action: NikaAction) -> anyhow::Result<()> {
         match action {
             NikaAction::SearchComic(query) => {
                 let sender = self.action_tx.clone().unwrap();
@@ -141,24 +140,28 @@ impl Component for SearchPage {
 
             NikaAction::SelectComic(mut c) => {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
-                sender.send(NikaAction::ShowLoadingScreen).unwrap();
-                let s = self.sources[self.selected_source_index].clone();
+                sender.send(NikaAction::ShowLoadingScreen)?;
+                let source = self.sources[self.selected_source_index].clone();
 
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
-                    let chapters = s.get_chapters(&c).await.unwrap();
-                    let info = s.get_info(&c).await.unwrap();
+                    let chapters = source.get_chapters(&c).await.unwrap();
+                    let info = source.get_info(&c).await.unwrap();
 
                     c.manga_info = info;
                     c.chapters = chapters;
 
                     sender.send(NikaAction::LiftLoadingScreen).unwrap();
-                    sender.send(NikaAction::ChangePage(Page::Comic(c))).unwrap();
+                    sender
+                        .send(NikaAction::ChangePage(Page::Comic(c, source)))
+                        .unwrap();
                 });
             }
             _ => {}
         }
+
+        Ok(())
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {

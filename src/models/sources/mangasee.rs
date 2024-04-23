@@ -25,7 +25,11 @@ impl Source for MangaseeSource {
         let rows: Vec<_> = soup.tag("div").class("row").find_all().collect();
         let row = &rows[1];
 
-        let data: Vec<_> = row.attr("ng-bind-html", "Series.s").tag("a").find_all().collect();
+        let data: Vec<_> = row
+            .attr("ng-bind-html", "Series.s")
+            .tag("a")
+            .find_all()
+            .collect();
         let comics: Vec<Comic> = data
             .into_iter()
             .map(|p| {
@@ -93,6 +97,10 @@ impl Source for MangaseeSource {
 
     fn name(&self) -> &'static str {
         "mangareader"
+    }
+
+    async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String> {
+        todo!()
     }
 }
 

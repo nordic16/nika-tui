@@ -1,5 +1,15 @@
+use std::borrow::BorrowMut;
+use std::{env, fs};
+use std::path::Path;
+use std::rc::Rc;
+use std::sync::Arc;
+
 use async_trait::async_trait;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use soup::{NodeExt, QueryBuilderExt, Soup};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 use crate::helpers;
 use crate::models::comic::{Chapter, Comic, ComicInfo, ComicType};
@@ -109,6 +119,49 @@ impl Source for MangapillSource {
     fn name(&self) -> &'static str {
         "mangapill"
     }
+
+    async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String> {
+        let client = reqwest::Client::new();
+        let body = client.get(&chapter.source).header("Referer", self.base_url()).send().await?.text().await?;
+
+        println!("{body}");
+
+        let path = {
+            let rng = rand::thread_rng();
+            let str: String = rng.sample_iter(&Alphanumeric).take(8).map(char::from).collect();
+
+            Path::join(&env::temp_dir(), str)
+        };
+
+        // TODO: handle this.
+        fs::create_dir(&path)?;
+
+        // Has to be inside a code block to make this function Send (soup isn't Send).
+        let urls: Vec<String> = {
+            let soup = Soup::new(&body);
+            let images: Vec<_> = soup.tag("img").find_all().collect();
+            images.into_iter().map(|f| f.get("data-src").unwrap()).collect()
+        };
+
+        for (i, url) in urls.iter().enumerate() {
+            let mut data = client
+                .get(url)
+                .header("Referer", self.base_url())
+                .send()
+                .await?;
+
+            let fname = format!("a-{i}.jpeg");
+            let path = path.join(fname);
+            let mut f = File::create(path).await?;
+            
+            while let Some(chunk) = data.chunk().await? {
+                f.write_all(&chunk).await?;
+            }
+            
+        }
+
+        Ok(String::from(path.to_str().unwrap()))
+    }
 }
 
 impl MangapillSource {
@@ -172,5 +225,19 @@ mod tests {
                 println!("{} ({})", chapter.name, chapter.source)
             }
         }
+    }
+
+    #[tokio::test]
+    async fn test_download_chapter() -> anyhow::Result<()> {
+        let source = MangapillSource::new();
+        let comic = Comic::new("One Piece", "https://mangapill.com/manga/2/one-piece", ComicType::Manga, None, Vec::new());
+        let chapters = source.get_chapters(&comic).await?;
+
+        let chapter = &chapters[0];
+        let path = source.download_chapter(&chapter).await?;
+
+        println!("Path: {path}");
+
+        Ok(())
     }
 }

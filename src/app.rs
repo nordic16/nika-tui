@@ -1,4 +1,5 @@
 use std::io;
+use std::sync::Arc;
 
 use crossterm::event::KeyEvent;
 use ratatui::style::{Style, Stylize};
@@ -11,16 +12,16 @@ use crate::components::main_page::HomePage;
 use crate::components::search_page::SearchPage;
 use crate::config::Config;
 use crate::models::comic::{Chapter, Comic};
-use crate::traits::Component;
+use crate::traits::{Component, Source};
 use crate::tui::Tui;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub enum Page {
     #[default]
     Home,
     Search,
     Options,
-    Comic(Comic),
+    Comic(Comic, Arc<dyn Source>),
 }
 
 #[derive(Default, Clone)]
@@ -44,6 +45,7 @@ pub enum NikaAction {
     SelectComic(Comic),
     FetchNewChapters(bool), // true if right, false if left.
     SetChapters(Vec<Chapter>),
+    FetchChapter(Chapter),
 }
 
 pub struct App {
@@ -110,7 +112,7 @@ impl App {
                         self.component.init(tx.clone())?;
                     }
                     _ => {
-                        self.component.update(act);
+                        self.component.update(act).unwrap();
                     }
                 }
             }
@@ -128,7 +130,7 @@ impl App {
             Page::Home => Box::<HomePage>::default(),
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
-            Page::Comic(c) => Box::new(ComicPage::new(c)),
+            Page::Comic(c, s) => Box::new(ComicPage::new(c, s)),
         }
     }
 

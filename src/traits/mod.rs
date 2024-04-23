@@ -23,6 +23,8 @@ pub trait Source: Send + Sync {
     async fn get_info(&self, comic: &Comic) -> reqwest::Result<Option<ComicInfo>>;
 
     fn name(&self) -> &'static str;
+
+    async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String>;
 }
 
 impl Clone for Box<dyn Source> {
@@ -35,7 +37,7 @@ pub trait Component {
     #[allow(unused_variables)]
     fn init(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()>;
 
-    fn handle_events(&mut self, event: Option<NikaEvent>) -> io::Result<Option<NikaAction>> {
+    fn handle_events(&mut self, event: Option<NikaEvent>) -> anyhow::Result<Option<NikaAction>> {
         let r = match event {
             Some(NikaEvent::Key(key_event)) => self.handle_key_events(key_event)?,
             Some(NikaEvent::Render) => Some(NikaAction::Render),
@@ -48,7 +50,7 @@ pub trait Component {
     fn handle_key_events(&mut self, key: KeyEvent) -> io::Result<Option<NikaAction>>;
 
     #[allow(unused_variables)]
-    fn update(&mut self, action: NikaAction);
+    fn update(&mut self, action: NikaAction) -> anyhow::Result<()>;
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect);
 }
