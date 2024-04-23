@@ -153,7 +153,11 @@ impl Component for SearchPage {
 
                     sender.send(NikaAction::LiftLoadingScreen).unwrap();
                     sender
-                        .send(NikaAction::ChangePage(Page::Comic(c, source, info.unwrap())))
+                        .send(NikaAction::ChangePage(Page::Comic(
+                            c,
+                            source,
+                            info.unwrap(),
+                        )))
                         .unwrap();
                 });
             }

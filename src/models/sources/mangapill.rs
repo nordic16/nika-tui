@@ -56,12 +56,7 @@ impl Source for MangapillSource {
                     let tmp = e.get("href").unwrap();
                     let source = format!("{base_url}{tmp}");
 
-                    mangas.push(Comic::new(
-                        &name,
-                        &source,
-                        ComicType::Manga,
-                        Vec::new(),
-                    ));
+                    mangas.push(Comic::new(&name, &source, ComicType::Manga, Vec::new()));
                 }
                 None => continue,
             }

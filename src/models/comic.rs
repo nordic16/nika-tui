@@ -47,12 +47,7 @@ impl ComicInfo {
 }
 
 impl Comic {
-    pub fn new(
-        name: &str,
-        source: &str,
-        comic_type: ComicType,
-        chapters: Vec<Chapter>,
-    ) -> Self {
+    pub fn new(name: &str, source: &str, comic_type: ComicType, chapters: Vec<Chapter>) -> Self {
         Self {
             name: name.to_owned(),
             source: source.to_owned(),

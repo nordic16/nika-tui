@@ -36,7 +36,7 @@ impl ComicPage {
             shown_chapters: chapters,
             page_number: 1,
             source,
-            info
+            info,
         }
     }
 }
@@ -48,10 +48,7 @@ impl Component for ComicPage {
         Ok(())
     }
 
-    fn handle_key_events(
-        &mut self,
-        key: event::KeyEvent,
-    ) -> io::Result<Option<NikaAction>> {
+    fn handle_key_events(&mut self, key: event::KeyEvent) -> io::Result<Option<NikaAction>> {
         match key.code {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
@@ -142,10 +139,7 @@ impl Component for ComicPage {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
 
                     match source.download_chapter(&chap).await {
-                        Ok(path) => {
-                            Command::new("feh").args([path])
-                            .output().await
-                        },
+                        Ok(path) => Command::new("feh").args([path]).output().await,
                         Err(e) => panic!("{:?}", e), // temporary lol
                     }
                 });
