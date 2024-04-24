@@ -29,7 +29,7 @@ pub struct ComicPage {
 impl ComicPage {
     pub fn new(comic: Comic, source: Arc<dyn Source>, info: ComicInfo, config: Config) -> Self {
         let c = comic.clone();
-        let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
+        let chapters: Vec<Chapter> = c.chapters.into_iter().take(config.chapter_page_size()).collect();
 
         Self {
             action_tx: None,

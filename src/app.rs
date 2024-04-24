@@ -49,10 +49,10 @@ pub enum NikaAction {
 }
 
 pub struct App {
-    pub component: Box<dyn Component>,
+    component: Box<dyn Component>,
     quit: bool,
     loading: bool,
-    pub config: Config,
+    config: Config,
 }
 
 impl App {
@@ -100,10 +100,10 @@ impl App {
                             tui.terminal.draw(|f| self.component.draw(f, f.size()))?;
                         } else {
                             let widget = self.get_loading_screen();
-
                             tui.terminal.draw(|f| f.render_widget(widget, f.size()))?;
                         }
                     }
+
                     NikaAction::ChangePage(page) => {
                         let page = self.get_component(page);
                         self.component = page;
