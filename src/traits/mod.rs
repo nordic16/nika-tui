@@ -27,12 +27,6 @@ pub trait Source: Send + Sync {
     async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String>;
 }
 
-impl Clone for Box<dyn Source> {
-    fn clone(&self) -> Self {
-        self.to_owned()
-    }
-}
-
 pub trait Component {
     #[allow(unused_variables)]
     fn init(&mut self, tx: UnboundedSender<NikaAction>) -> io::Result<()>;

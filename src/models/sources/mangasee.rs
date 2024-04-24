@@ -105,8 +105,6 @@ impl Source for MangaseeSource {
 
 #[cfg(test)]
 mod tests {
-    use reqwest::Client;
-
     use crate::models::comic::{Comic, ComicType};
     use crate::models::sources::mangapill::MangapillSource;
     use crate::models::sources::mangasee::MangaseeSource;

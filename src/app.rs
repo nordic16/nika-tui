@@ -55,13 +55,13 @@ pub struct App {
     pub config: Config,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    pub fn new(config: Config) -> Self {
         Self {
             component: Box::<HomePage>::default(),
             quit: false,
             loading: false,
-            config: Config::get_or_default(),
+            config,
         }
     }
 }
@@ -130,7 +130,7 @@ impl App {
             Page::Home => Box::<HomePage>::default(),
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
-            Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i)),
+            Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i, self.config.clone())),
         }
     }
 

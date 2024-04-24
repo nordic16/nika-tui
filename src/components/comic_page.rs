@@ -10,6 +10,7 @@ use tokio::process::Command;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::app::{NikaAction, Page};
+use crate::config::Config;
 use crate::helpers;
 use crate::models::comic::{Chapter, Comic, ComicInfo};
 use crate::traits::{Component, Source};
@@ -19,13 +20,14 @@ pub struct ComicPage {
     comic: Comic,
     list_state: ListState,
     shown_chapters: Vec<Chapter>,
-    page_number: u16,
+    page_number: usize,
     source: Arc<dyn Source>,
     info: ComicInfo,
+    config: Config,
 }
 
 impl ComicPage {
-    pub fn new(comic: Comic, source: Arc<dyn Source>, info: ComicInfo) -> Self {
+    pub fn new(comic: Comic, source: Arc<dyn Source>, info: ComicInfo, config: Config) -> Self {
         let c = comic.clone();
         let chapters: Vec<Chapter> = c.chapters.into_iter().take(25).collect();
 
@@ -37,6 +39,7 @@ impl ComicPage {
             page_number: 1,
             source,
             info,
+            config,
         }
     }
 }
@@ -57,8 +60,11 @@ impl Component for ComicPage {
             KeyCode::Up => {
                 let selected = self.list_state.selected().unwrap_or_default();
 
-                let index =
-                    helpers::get_new_selection_index(selected, 25, ListDirection::BottomToTop);
+                let index = helpers::get_new_selection_index(
+                    selected,
+                    self.config.chapter_page_size(),
+                    ListDirection::BottomToTop,
+                );
                 self.list_state.select(Some(index));
 
                 Ok(None)
@@ -83,10 +89,8 @@ impl Component for ComicPage {
 
             KeyCode::Enter => {
                 let chapter = self.shown_chapters[self.list_state.selected().unwrap()].clone();
-
                 Ok(Some(NikaAction::FetchChapter(chapter)))
             }
-
             _ => Ok(None),
         }
     }
@@ -94,7 +98,7 @@ impl Component for ComicPage {
     fn update(&mut self, action: NikaAction) -> anyhow::Result<()> {
         match action {
             NikaAction::FetchNewChapters(a) => {
-                let final_page = (self.comic.chapters.len() as f32 / 25_f32).ceil() as u16;
+                let final_page = (self.comic.chapters.len() as f32 / 25_f32).ceil() as usize;
 
                 let new_page_number = match a {
                     true => {
@@ -111,13 +115,15 @@ impl Component for ComicPage {
                             self.page_number - 1
                         }
                     }
-                };
+                } as usize;
+
+                let amount = self.config.chapter_page_size();
 
                 let tmp = self.comic.chapters.clone();
                 let chapters = tmp
                     .into_iter()
-                    .skip(((new_page_number - 1) * 25) as usize)
-                    .take(25)
+                    .skip((new_page_number - 1) * amount)
+                    .take(amount)
                     .collect::<Vec<Chapter>>();
 
                 if chapters.is_empty() {
@@ -137,14 +143,15 @@ impl Component for ComicPage {
 
                 tokio::spawn(async move {
                     sender.send(NikaAction::ShowLoadingScreen).unwrap();
-
                     match source.download_chapter(&chap).await {
-                        Ok(path) => Command::new("feh").args([path]).output().await,
+                        Ok(path) => {
+                            sender.send(NikaAction::LiftLoadingScreen).unwrap();
+                            Command::new("feh").args([path]).output().await
+                        }
                         Err(e) => panic!("{:?}", e), // temporary lol
                     }
                 });
             }
-
             _ => {}
         };
 
@@ -179,7 +186,8 @@ impl Component for ComicPage {
         .centered()
         .block(block.clone());
 
-        let total_pages = (self.comic.chapters.len() as f32 / 25_f32).ceil();
+        let page_size = self.config.chapter_page_size();
+        let total_pages = (self.comic.chapters.len() as f32 / page_size as f32).ceil();
         let tmp = format!("Chapters (Page {} of {})", self.page_number, total_pages);
 
         let list = self

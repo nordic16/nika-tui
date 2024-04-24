@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::DEFAULT_CONFIG_DIR;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     anilist_token: String,
-    chapter_page_size: u16,
+    chapter_page_size: usize,
 }
 
 impl Default for Config {
@@ -43,7 +43,7 @@ impl Config {
         }
     }
 
-    pub fn chapter_page_size(&self) -> u16 {
+    pub fn chapter_page_size(&self) -> usize {
         self.chapter_page_size
     }
 

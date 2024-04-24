@@ -1,6 +1,7 @@
 use std::io;
 
 use app::App;
+use config::Config;
 
 mod app;
 pub mod components;
@@ -13,6 +14,7 @@ mod tui;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    let mut app = App::default();
+    let config = Config::get_or_default();
+    let mut app = App::new(config);
     app.run().await
 }
