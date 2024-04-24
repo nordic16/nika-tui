@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crossterm::event::{self, KeyCode};
 use ratatui::prelude::*;
 use ratatui::symbols::border;
-use ratatui::widgets::block::*;
+use ratatui::widgets::{block::*, Wrap};
 use ratatui::widgets::{Borders, List, ListDirection, ListState, Paragraph};
 use tokio::process::Command;
 use tokio::sync::mpsc::UnboundedSender;
@@ -185,7 +185,8 @@ impl Component for ComicPage {
             format!("Genres: {}", self.info.genres.join(", ").bold()).into(),
         ])
         .centered()
-        .block(block.clone());
+        .block(block.clone())
+        .wrap(Wrap {trim: true});
 
         let page_size = self.config.chapter_page_size();
         let total_pages = (self.comic.chapters.len() as f32 / page_size as f32).ceil();

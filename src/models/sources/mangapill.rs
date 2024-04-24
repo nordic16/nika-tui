@@ -82,6 +82,8 @@ impl Source for MangapillSource {
         let soup = Soup::new(&manga_page);
 
         let info_div = soup.class("md:grid-cols-3").find();
+        let divs: Vec<_> = soup.class("mb-3").find_all().collect();
+        let genre_div = &divs[4]; // bad code lol
 
         if let Some(container) = info_div {
             let values: Vec<_> = container.tag("div").find_all().collect();
@@ -90,13 +92,14 @@ impl Source for MangapillSource {
                 return Ok(None);
             }
 
+            let genres: Vec<String> = genre_div.tag("a").find_all().map(|f| f.text()).collect();
             let status = values[4].text();
             let date = values[6].text();
 
             return Ok(Some(ComicInfo {
                 status,
                 date,
-                genres: vec![String::from("fantasy")],
+                genres,
             }));
         }
 
@@ -180,7 +183,7 @@ mod tests {
     use crate::traits::Source;
 
     #[tokio::test]
-    async fn test_scrape_manga_info() {
+    async fn test_get_info() {
         let source = MangapillSource;
 
         let comic = Comic {
