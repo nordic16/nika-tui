@@ -43,7 +43,7 @@ impl Component for SearchPage {
                 match key.code {
                     KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Home))),
                     KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
-                    KeyCode::Char('e') => {
+                    KeyCode::Char('/') => {
                         self.mode = InputMode::Editing;
                         self.list_state.select(None);
                         Ok(None)
@@ -55,13 +55,11 @@ impl Component for SearchPage {
                         if self.selected_source_index == self.sources.len() {
                             self.selected_source_index = 0;
                         }
-
                         Ok(None)
                     }
 
                     KeyCode::Up => {
                         let selected = self.list_state.selected().unwrap_or_default();
-
                         let index = helpers::get_new_selection_index(
                             selected,
                             self.search_results.len(),
@@ -75,7 +73,6 @@ impl Component for SearchPage {
 
                     KeyCode::Down => {
                         let selected = self.list_state.selected().unwrap_or_default();
-
                         let index = helpers::get_new_selection_index(
                             selected,
                             self.search_results.len(),
@@ -98,18 +95,15 @@ impl Component for SearchPage {
             InputMode::Editing => {
                 if let KeyEventKind::Press = key.kind {
                     match key.code {
-                        KeyCode::Esc => {
+                        KeyCode::Enter => {
                             self.mode = InputMode::Normal;
                             self.list_state.select(Some(0));
                             return Ok(None);
                         }
 
-                        KeyCode::Enter => {} // No newline lil bro
-
                         _ => {
                             self.text_area.input(key);
                             let query = &self.text_area.lines()[0];
-
                             return Ok(Some(NikaAction::SearchComic(query.to_owned())));
                         }
                     }

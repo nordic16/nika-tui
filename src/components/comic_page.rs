@@ -56,6 +56,7 @@ impl Component for ComicPage {
             KeyCode::Char('q') => Ok(Some(NikaAction::Quit)),
             KeyCode::Char('s') => Ok(Some(NikaAction::ChangePage(Page::Search))),
             KeyCode::Char('h') => Ok(Some(NikaAction::ChangePage(Page::Home))),
+            KeyCode::Esc => Ok(Some(NikaAction::ChangePage(Page::Search))),
 
             KeyCode::Up => {
                 let selected = self.list_state.selected().unwrap_or_default();
