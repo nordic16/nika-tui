@@ -169,7 +169,7 @@ impl Component for SearchPage {
 
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
+            .constraints(vec![Constraint::Length(3), Constraint::Fill(2)])
             .split(rect);
 
         let block1 = Block::default()
