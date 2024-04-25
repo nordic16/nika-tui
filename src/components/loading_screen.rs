@@ -1,21 +1,31 @@
 use std::io;
 
 use crossterm::event::KeyEvent;
-use ratatui::{layout::Rect, style::{Style, Stylize}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use ratatui::layout::Rect;
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::{Block, BorderType, Borders, LineGauge, Paragraph};
+use ratatui::{symbols, Frame};
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{app::NikaAction, traits::Component};
+use crate::app::NikaAction;
+use crate::traits::Component;
 
 #[derive(Default, Clone)]
- pub struct LoadingScreen {
-     progress: Option<u16>,
-     text: String,
-     sender: Option<UnboundedSender<NikaAction>>
- }
+pub struct LoadingScreen {
+    percentage: Option<f64>,
+    text: String,
+    sender: Option<UnboundedSender<NikaAction>>,
+    operation: String,
+}
 
 impl LoadingScreen {
-    pub fn new(progress: Option<u16>, text: &str) -> Self {
-        Self { progress,  text: text.to_owned(), sender: None}
+    pub fn new(progress: Option<f64>, text: &str) -> Self {
+        Self {
+            percentage: progress,
+            text: text.to_owned(),
+            sender: None,
+            operation: String::from(""),
+        }
     }
 }
 
@@ -30,7 +40,14 @@ impl Component for LoadingScreen {
     }
 
     fn update(&mut self, action: crate::app::NikaAction) -> anyhow::Result<()> {
-        Ok(())
+        match action {
+            NikaAction::UpdateLoadingScreen(operation, pr) => {
+                self.percentage = Some(pr);
+                self.operation = operation;
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, rect: Rect) {
@@ -44,6 +61,20 @@ impl Component for LoadingScreen {
             .bold()
             .block(block);
 
-        f.render_widget(p, rect)
+        f.render_widget(p, rect);
+
+        let size = rect.as_size();
+        let pos = rect.as_position();
+        let rect2 = Rect::new(pos.x + 2, pos.y + 2, size.width - 4, 2);
+
+        if let Some(percentage) = self.percentage {
+            let gauge = LineGauge::default()
+                .block(Block::default().title(self.operation.as_str()))
+                .ratio(percentage)
+                .gauge_style(Style::default().fg(Color::Green))
+                .line_set(symbols::line::ROUNDED);
+
+            f.render_widget(gauge, rect2);
+        }
     }
 }

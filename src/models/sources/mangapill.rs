@@ -7,7 +7,9 @@ use rand::Rng;
 use soup::{NodeExt, QueryBuilderExt, Soup};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::sync::mpsc::UnboundedSender;
 
+use crate::app::{NikaAction, CLIENT};
 use crate::helpers;
 use crate::models::comic::{Chapter, Comic, ComicInfo, ComicType};
 use crate::traits::Source;
@@ -65,7 +67,7 @@ impl Source for MangapillSource {
     async fn get_chapters(&self, comic: &Comic) -> reqwest::Result<Vec<Chapter>> {
         let base_url = self.base_url();
 
-        let manga_page = reqwest::get(&comic.source).await?.text().await?;
+        let manga_page = CLIENT.get(&comic.source).send().await?.text().await?;
         let soup = Soup::new(&manga_page);
 
         let chapter_urls: Vec<_> = soup.tag("a").class("border-border").find_all().collect();
@@ -78,7 +80,7 @@ impl Source for MangapillSource {
     }
 
     async fn get_info(&self, comic: &Comic) -> reqwest::Result<Option<ComicInfo>> {
-        let manga_page = reqwest::get(&comic.source).await?.text().await?;
+        let manga_page = CLIENT.get(&comic.source).send().await?.text().await?;
         let soup = Soup::new(&manga_page);
 
         let info_div = soup.class("md:grid-cols-3").find();
@@ -114,9 +116,13 @@ impl Source for MangapillSource {
         "mangapill"
     }
 
-    async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String> {
-        let client = reqwest::Client::new();
-        let body = client
+    /// sender is used to update progress on loading screen.
+    async fn download_chapter(
+        &self,
+        chapter: &Chapter,
+        sender: Option<UnboundedSender<NikaAction>>,
+    ) -> anyhow::Result<String> {
+        let body = CLIENT
             .get(&chapter.source)
             .header("Referer", self.base_url())
             .send()
@@ -149,11 +155,14 @@ impl Source for MangapillSource {
         };
 
         for (i, url) in urls.iter().enumerate() {
-            let mut data = client
+            let mut data = CLIENT
                 .get(url)
                 .header("Referer", self.base_url())
                 .send()
                 .await?;
+
+            let cont_size = data.content_length().unwrap() as f64;
+            let mut total_written = 0f64;
 
             let fname = format!("page-{i}.jpeg");
             let path = path.join(fname);
@@ -161,6 +170,15 @@ impl Source for MangapillSource {
 
             while let Some(chunk) = data.chunk().await? {
                 f.write_all(&chunk).await?;
+                total_written += chunk.len() as f64;
+
+                if let Some(sender) = &sender {
+                    let operation = format!("Downloading page {}...", i + 1);
+                    sender.send(NikaAction::UpdateLoadingScreen(
+                        operation,
+                        total_written / cont_size,
+                    ))?;
+                }
             }
         }
         Ok(String::from(path.to_str().unwrap()))
@@ -238,9 +256,8 @@ mod tests {
             Vec::new(),
         );
         let chapters = source.get_chapters(&comic).await?;
-
         let chapter = &chapters[0];
-        let path = source.download_chapter(&chapter).await?;
+        let path = source.download_chapter(&chapter, None).await?;
 
         println!("Path: {path}");
 

@@ -1,5 +1,6 @@
 use ratatui::widgets::ListDirection;
 
+use crate::app::CLIENT;
 use crate::traits::Source;
 
 pub async fn get_search_response_body(
@@ -10,8 +11,7 @@ pub async fn get_search_response_body(
     let tmp = query.replace(' ', "+");
 
     let url = format!("{base_url}/search?q={tmp}");
-
-    reqwest::get(url).await?.text().await
+    CLIENT.get(url).send().await?.text().await
 }
 
 pub fn get_new_selection_index(val: usize, len: usize, direction: ListDirection) -> usize {

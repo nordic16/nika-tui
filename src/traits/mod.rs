@@ -24,7 +24,11 @@ pub trait Source: Send + Sync {
 
     fn name(&self) -> &'static str;
 
-    async fn download_chapter(&self, chapter: &Chapter) -> anyhow::Result<String>;
+    async fn download_chapter(
+        &self,
+        chapter: &Chapter,
+        sender: Option<UnboundedSender<NikaAction>>,
+    ) -> anyhow::Result<String>;
 }
 
 pub trait Component {

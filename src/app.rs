@@ -2,9 +2,8 @@ use std::io;
 use std::sync::Arc;
 
 use crossterm::event::KeyEvent;
-use ratatui::style::{Style, Stylize};
-use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+use lazy_static::lazy_static;
+use reqwest::Client;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::components::comic_page::ComicPage;
@@ -16,6 +15,10 @@ use crate::models::comic::{Chapter, Comic, ComicInfo};
 use crate::traits::{Component, Source};
 use crate::tui::Tui;
 
+lazy_static! {
+    pub static ref CLIENT: Client = Client::new();
+}
+
 #[derive(Default, Clone)]
 pub enum Page {
     #[default]
@@ -25,7 +28,7 @@ pub enum Page {
     Comic(Comic, Arc<dyn Source>, ComicInfo),
     /// string: text shown to the user.
     /// u16: progress of a given operation.
-    LoadingScreen(String, Option<u16>)
+    LoadingScreen(String, Option<f64>),
 }
 
 #[derive(Default, Clone)]
@@ -48,6 +51,7 @@ pub enum NikaAction {
     FetchNewChapters(bool), // true if right, false if left.
     SetChapters(Vec<Chapter>),
     FetchChapter(Chapter),
+    UpdateLoadingScreen(String, f64),
 }
 
 pub struct App {

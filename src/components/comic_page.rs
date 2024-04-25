@@ -120,7 +120,7 @@ impl Component for ComicPage {
                             self.page_number - 1
                         }
                     }
-                } as usize;
+                };
 
                 let amount = self.config.chapter_page_size();
 
@@ -149,10 +149,17 @@ impl Component for ComicPage {
                 let comic = self.comic.clone();
 
                 tokio::spawn(async move {
-                    sender.send(NikaAction::ChangePage(Page::LoadingScreen(String::from("Downloading chapter..."), None))).unwrap();
-                    match source.download_chapter(&chap).await {
+                    sender
+                        .send(NikaAction::ChangePage(Page::LoadingScreen(
+                            String::from("Downloading chapter..."),
+                            None,
+                        )))
+                        .unwrap();
+                    match source.download_chapter(&chap, Some(sender.clone())).await {
                         Ok(path) => {
-                            sender.send(NikaAction::ChangePage(Page::Comic(comic, source, info))).unwrap();
+                            sender
+                                .send(NikaAction::ChangePage(Page::Comic(comic, source, info)))
+                                .unwrap();
                             Command::new("feh").args([path]).output().await.unwrap();
                         }
                         Err(e) => panic!("{:?}", e), // temporary lol
