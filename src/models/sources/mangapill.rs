@@ -124,8 +124,6 @@ impl Source for MangapillSource {
             .text()
             .await?;
 
-        println!("{body}");
-
         let path = {
             let rng = rand::thread_rng();
             let str: String = rng
@@ -165,7 +163,6 @@ impl Source for MangapillSource {
                 f.write_all(&chunk).await?;
             }
         }
-
         Ok(String::from(path.to_str().unwrap()))
     }
 }

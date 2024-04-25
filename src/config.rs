@@ -78,7 +78,6 @@ impl Drop for Config {
 #[cfg(test)]
 mod tests {
     use std::{env, fs};
-
     use super::Config;
 
     #[test]

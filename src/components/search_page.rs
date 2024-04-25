@@ -134,18 +134,15 @@ impl Component for SearchPage {
 
             NikaAction::SelectComic(mut c) => {
                 let sender = self.action_tx.as_ref().unwrap().to_owned();
-                sender.send(NikaAction::ShowLoadingScreen)?;
+                sender.send(NikaAction::ChangePage(Page::LoadingScreen(String::from("Loading comics..."), None)))?;
                 let source = self.sources[self.selected_source_index].clone();
 
                 tokio::spawn(async move {
-                    sender.send(NikaAction::ShowLoadingScreen).unwrap();
-
                     let chapters = source.get_chapters(&c).await.unwrap();
                     let info = source.get_info(&c).await.unwrap();
 
                     c.chapters = chapters;
 
-                    sender.send(NikaAction::LiftLoadingScreen).unwrap();
                     sender
                         .send(NikaAction::ChangePage(Page::Comic(
                             c,

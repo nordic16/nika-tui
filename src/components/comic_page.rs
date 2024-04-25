@@ -4,8 +4,8 @@ use std::sync::Arc;
 use crossterm::event::{self, KeyCode};
 use ratatui::prelude::*;
 use ratatui::symbols::border;
-use ratatui::widgets::{block::*, Wrap};
-use ratatui::widgets::{Borders, List, ListDirection, ListState, Paragraph};
+use ratatui::widgets::block::*;
+use ratatui::widgets::{Borders, List, ListDirection, ListState, Paragraph, Wrap};
 use tokio::process::Command;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -29,7 +29,11 @@ pub struct ComicPage {
 impl ComicPage {
     pub fn new(comic: Comic, source: Arc<dyn Source>, info: ComicInfo, config: Config) -> Self {
         let c = comic.clone();
-        let chapters: Vec<Chapter> = c.chapters.into_iter().take(config.chapter_page_size()).collect();
+        let chapters: Vec<Chapter> = c
+            .chapters
+            .into_iter()
+            .take(config.chapter_page_size())
+            .collect();
 
         Self {
             action_tx: None,
@@ -141,13 +145,15 @@ impl Component for ComicPage {
             NikaAction::FetchChapter(chap) => {
                 let sender = self.action_tx.clone().unwrap();
                 let source = self.source.clone();
+                let info = self.info.clone();
+                let comic = self.comic.clone();
 
                 tokio::spawn(async move {
-                    sender.send(NikaAction::ShowLoadingScreen).unwrap();
+                    sender.send(NikaAction::ChangePage(Page::LoadingScreen(String::from("Downloading chapter..."), None))).unwrap();
                     match source.download_chapter(&chap).await {
                         Ok(path) => {
-                            sender.send(NikaAction::LiftLoadingScreen).unwrap();
-                            Command::new("feh").args([path]).output().await
+                            sender.send(NikaAction::ChangePage(Page::Comic(comic, source, info))).unwrap();
+                            Command::new("feh").args([path]).output().await.unwrap();
                         }
                         Err(e) => panic!("{:?}", e), // temporary lol
                     }
@@ -186,7 +192,7 @@ impl Component for ComicPage {
         ])
         .centered()
         .block(block.clone())
-        .wrap(Wrap {trim: true});
+        .wrap(Wrap { trim: true });
 
         let page_size = self.config.chapter_page_size();
         let total_pages = (self.comic.chapters.len() as f32 / page_size as f32).ceil();

@@ -8,6 +8,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::components::comic_page::ComicPage;
+use crate::components::loading_screen::LoadingScreen;
 use crate::components::main_page::HomePage;
 use crate::components::search_page::SearchPage;
 use crate::config::Config;
@@ -22,6 +23,9 @@ pub enum Page {
     Search,
     Options,
     Comic(Comic, Arc<dyn Source>, ComicInfo),
+    /// string: text shown to the user.
+    /// u16: progress of a given operation.
+    LoadingScreen(String, Option<u16>)
 }
 
 #[derive(Default, Clone)]
@@ -40,8 +44,6 @@ pub enum NikaAction {
     ChangePage(Page),
     SearchComic(String),
     SetSearchResults(Vec<Comic>),
-    ShowLoadingScreen,
-    LiftLoadingScreen,
     SelectComic(Comic),
     FetchNewChapters(bool), // true if right, false if left.
     SetChapters(Vec<Chapter>),
@@ -51,7 +53,6 @@ pub enum NikaAction {
 pub struct App {
     component: Box<dyn Component>,
     quit: bool,
-    loading: bool,
     config: Config,
 }
 
@@ -60,7 +61,6 @@ impl App {
         Self {
             component: Box::<HomePage>::default(),
             quit: false,
-            loading: false,
             config,
         }
     }
@@ -92,16 +92,9 @@ impl App {
             while let Ok(act) = rx.try_recv() {
                 match act {
                     NikaAction::Quit => self.quit = true,
-                    NikaAction::ShowLoadingScreen => self.loading = true,
-                    NikaAction::LiftLoadingScreen => self.loading = false,
                     NikaAction::Render => {
                         // Receiving a render request causes the app to draw the widget on screen.
-                        if !self.loading {
-                            tui.terminal.draw(|f| self.component.draw(f, f.size()))?;
-                        } else {
-                            let widget = self.get_loading_screen();
-                            tui.terminal.draw(|f| f.render_widget(widget, f.size()))?;
-                        }
+                        tui.terminal.draw(|f| self.component.draw(f, f.size()))?;
                     }
 
                     NikaAction::ChangePage(page) => {
@@ -131,18 +124,7 @@ impl App {
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
             Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i, self.config.clone())),
+            Page::LoadingScreen(t, p) => Box::new(LoadingScreen::new(p, t.as_str())),
         }
-    }
-
-    fn get_loading_screen(&self) -> Paragraph<'static> {
-        let block = Block::default()
-            .border_style(Style::new().light_blue())
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
-
-        Paragraph::new(Text::from("Loading..."))
-            .centered()
-            .bold()
-            .block(block)
     }
 }
