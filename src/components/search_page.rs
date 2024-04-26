@@ -137,6 +137,7 @@ impl Component for SearchPage {
                 sender.send(NikaAction::ChangePage(Page::LoadingScreen(
                     "Loading Comics...",
                     None,
+                    false
                 )))?;
                 let source = self.sources[self.selected_source_index].clone();
 

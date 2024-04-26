@@ -28,7 +28,8 @@ pub enum Page {
     Comic(Comic, Arc<dyn Source>, ComicInfo),
     /// string: text shown to the user.
     /// u16: progress of a given operation.
-    LoadingScreen(&'static str, Option<f64>),
+    /// bool: displays gauge.
+    LoadingScreen(&'static str, Option<f64>, bool),
 }
 
 #[derive(Default, Clone)]
@@ -128,7 +129,7 @@ impl App {
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
             Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i, self.config.clone())),
-            Page::LoadingScreen(t, p) => Box::new(LoadingScreen::new(p, t)),
+            Page::LoadingScreen(t, p, g) => Box::new(LoadingScreen::new(p, t, g)),
         }
     }
 }

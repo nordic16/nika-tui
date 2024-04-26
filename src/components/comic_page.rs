@@ -150,6 +150,7 @@ impl Component for ComicPage {
                         .send(NikaAction::ChangePage(Page::LoadingScreen(
                             "Downloading chapter",
                             None,
+                            true
                         )))
                         .unwrap();
                     match source.download_chapter(&chap, Some(sender.clone())).await {

@@ -2,8 +2,8 @@ use std::path::Path;
 use std::{env, fs};
 
 use async_trait::async_trait;
-use futures::future::join_all;
-use futures::{StreamExt, TryFutureExt};
+use futures::future::{self, join_all};
+use futures::StreamExt;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use soup::{NodeExt, QueryBuilderExt, Soup};
@@ -125,14 +125,13 @@ impl Source for MangapillSource {
         chapter: &Chapter,
         sender: Option<UnboundedSender<NikaAction>>,
     ) -> anyhow::Result<String> {
-        let body = CLIENT
+        let req = CLIENT
             .get(&chapter.source)
             .header("Referer", self.base_url())
             .send()
-            .await?
-            .text()
             .await?;
 
+        let body = req.text().await?;
         let path = {
             let rng = rand::thread_rng();
             let str: String = rng
@@ -158,37 +157,34 @@ impl Source for MangapillSource {
         };
 
         let mut tasks = Vec::<JoinHandle<()>>::new();
-        let base_url = self.base_url();
-        for (i, url) in urls.into_iter().enumerate() {
+        let tmp: Vec<_> = urls.iter().map(|f| CLIENT.get(f).header("Referer", self.base_url()).send()).collect();
+        
+        // todo: refactor code.
+        let results = future::join_all(tmp).await;
+        let requests: Vec<_> = results.into_iter().map(|f| f.unwrap()).collect();
+        let sizes: Vec<u64> = requests.iter().map(|f| f.content_length().unwrap()).collect();
+        let total_size: f64 = sizes.iter().sum::<u64>() as f64;
+
+        for (i, data) in requests.into_iter().enumerate() {
             let fname = format!("page-{i}.jpeg");
             let path = path.join(fname);
             let s = sender.clone();
 
             // images are downloaded concurrently.
             tasks.push(tokio::spawn(async move {
-                let data = CLIENT
-                    .get(url)
-                    .header("Referer", base_url)
-                    .send()
-                    .await
-                    .unwrap();
-
-                let cont_size = data.content_length().unwrap() as f64;
-                let mut total_written = 0f64;
                 let mut stream = data.bytes_stream();
-
                 let mut f = File::create(path).await.unwrap();
 
                 while let Some(Ok(chunk)) = stream.next().await {
                     f.write_all(&chunk).await.unwrap();
-                    total_written += chunk.len() as f64;
+                    let chunk_size = chunk.len() as f64;
 
                     if let Some(sender) = &s {
-                        let operation = format!("Downloading manga...");
+                        let operation = "Downloading manga...".to_owned();
                         sender
                             .send(NikaAction::UpdateLoadingScreen(
                                 operation,
-                                total_written / cont_size,
+                                chunk_size / total_size,
                             ))
                             .unwrap();
                     }

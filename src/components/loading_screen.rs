@@ -16,15 +16,17 @@ pub struct LoadingScreen {
     text: String,
     sender: Option<UnboundedSender<NikaAction>>,
     operation: String,
+    show_gauge: bool,
 }
 
 impl LoadingScreen {
-    pub fn new(progress: Option<f64>, text: &str) -> Self {
+    pub fn new(progress: Option<f64>, text: &str, gauge: bool) -> Self {
         Self {
             percentage: progress,
             text: text.to_owned(),
             sender: None,
             operation: String::from(""),
+            show_gauge: gauge
         }
     }
 }
@@ -42,7 +44,10 @@ impl Component for LoadingScreen {
     fn update(&mut self, action: crate::app::NikaAction) -> anyhow::Result<()> {
         match action {
             NikaAction::UpdateLoadingScreen(operation, pr) => {
-                self.percentage = Some(pr);
+                let mut percentage = self.percentage.unwrap_or_default();
+                percentage += pr;
+
+                self.percentage = Some(percentage);
                 self.operation = operation;
                 Ok(())
             }
@@ -67,7 +72,8 @@ impl Component for LoadingScreen {
         let pos = rect.as_position();
         let rect2 = Rect::new(pos.x + 2, pos.y + 2, size.width - 4, 2);
 
-        if let Some(percentage) = self.percentage {
+        if self.show_gauge {
+            let percentage = self.percentage.unwrap_or_default();
             let gauge = LineGauge::default()
                 .block(Block::default().title(self.operation.as_str()))
                 .ratio(percentage)
