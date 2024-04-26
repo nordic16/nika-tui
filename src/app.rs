@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crossterm::event::KeyEvent;
 use lazy_static::lazy_static;
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::components::comic_page::ComicPage;
@@ -16,7 +16,7 @@ use crate::traits::{Component, Source};
 use crate::tui::Tui;
 
 lazy_static! {
-    pub static ref CLIENT: Client = Client::new();
+    pub static ref CLIENT: Client = ClientBuilder::new().gzip(true).build().unwrap();
 }
 
 #[derive(Default, Clone)]
@@ -28,7 +28,7 @@ pub enum Page {
     Comic(Comic, Arc<dyn Source>, ComicInfo),
     /// string: text shown to the user.
     /// u16: progress of a given operation.
-    LoadingScreen(String, Option<f64>),
+    LoadingScreen(&'static str, Option<f64>),
 }
 
 #[derive(Default, Clone)]
@@ -128,7 +128,7 @@ impl App {
             Page::Search => Box::<SearchPage>::default(),
             Page::Options => todo!(),
             Page::Comic(c, s, i) => Box::new(ComicPage::new(c, s, i, self.config.clone())),
-            Page::LoadingScreen(t, p) => Box::new(LoadingScreen::new(p, t.as_str())),
+            Page::LoadingScreen(t, p) => Box::new(LoadingScreen::new(p, t)),
         }
     }
 }

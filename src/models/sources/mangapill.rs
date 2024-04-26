@@ -2,12 +2,15 @@ use std::path::Path;
 use std::{env, fs};
 
 use async_trait::async_trait;
+use futures::future::join_all;
+use futures::{StreamExt, TryFutureExt};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use soup::{NodeExt, QueryBuilderExt, Soup};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::task::JoinHandle;
 
 use crate::app::{NikaAction, CLIENT};
 use crate::helpers;
@@ -154,33 +157,47 @@ impl Source for MangapillSource {
                 .collect()
         };
 
-        for (i, url) in urls.iter().enumerate() {
-            let mut data = CLIENT
-                .get(url)
-                .header("Referer", self.base_url())
-                .send()
-                .await?;
-
-            let cont_size = data.content_length().unwrap() as f64;
-            let mut total_written = 0f64;
-
+        let mut tasks = Vec::<JoinHandle<()>>::new();
+        let base_url = self.base_url();
+        for (i, url) in urls.into_iter().enumerate() {
             let fname = format!("page-{i}.jpeg");
             let path = path.join(fname);
-            let mut f = File::create(path).await?;
+            let s = sender.clone();
 
-            while let Some(chunk) = data.chunk().await? {
-                f.write_all(&chunk).await?;
-                total_written += chunk.len() as f64;
+            // images are downloaded concurrently.
+            tasks.push(tokio::spawn(async move {
+                let data = CLIENT
+                    .get(url)
+                    .header("Referer", base_url)
+                    .send()
+                    .await
+                    .unwrap();
 
-                if let Some(sender) = &sender {
-                    let operation = format!("Downloading page {}...", i + 1);
-                    sender.send(NikaAction::UpdateLoadingScreen(
-                        operation,
-                        total_written / cont_size,
-                    ))?;
+                let cont_size = data.content_length().unwrap() as f64;
+                let mut total_written = 0f64;
+                let mut stream = data.bytes_stream();
+
+                let mut f = File::create(path).await.unwrap();
+
+                while let Some(Ok(chunk)) = stream.next().await {
+                    f.write_all(&chunk).await.unwrap();
+                    total_written += chunk.len() as f64;
+
+                    if let Some(sender) = &s {
+                        let operation = format!("Downloading manga...");
+                        sender
+                            .send(NikaAction::UpdateLoadingScreen(
+                                operation,
+                                total_written / cont_size,
+                            ))
+                            .unwrap();
+                    }
                 }
-            }
+            }));
         }
+
+        // Waits till all tasks are complete.
+        join_all(tasks).await;
         Ok(String::from(path.to_str().unwrap()))
     }
 }

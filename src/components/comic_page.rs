@@ -51,7 +51,6 @@ impl ComicPage {
 impl Component for ComicPage {
     fn init(&mut self, tx: UnboundedSender<NikaAction>) -> std::io::Result<()> {
         self.action_tx = Some(tx);
-
         Ok(())
     }
 
@@ -71,7 +70,6 @@ impl Component for ComicPage {
                     ListDirection::BottomToTop,
                 );
                 self.list_state.select(Some(index));
-
                 Ok(None)
             }
 
@@ -85,7 +83,6 @@ impl Component for ComicPage {
                 );
 
                 self.list_state.select(Some(index));
-
                 Ok(None)
             }
 
@@ -151,7 +148,7 @@ impl Component for ComicPage {
                 tokio::spawn(async move {
                     sender
                         .send(NikaAction::ChangePage(Page::LoadingScreen(
-                            String::from("Downloading chapter..."),
+                            "Downloading chapter",
                             None,
                         )))
                         .unwrap();
